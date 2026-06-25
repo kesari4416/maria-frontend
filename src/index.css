@@ -1,0 +1,140 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-base: #fafaf9;
+    --bg-surface: #ffffff;
+    --text-primary: #1c1917;
+    --text-secondary: #57534e;
+    --brand-primary: #15803d;
+    --brand-primary-hover: #166534;
+    --brand-accent: #84cc16;
+    --terracotta: #9a3412;
+}
+
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: "Manrope", system-ui, sans-serif;
+}
+
+.font-display {
+    font-family: "Bricolage Grotesque", "Manrope", sans-serif;
+    letter-spacing: -0.02em;
+}
+
+.label-eyebrow {
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+}
+
+.glass-nav {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.hero-overlay {
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.35) 0%,
+        rgba(0, 0, 0, 0.55) 60%,
+        rgba(0, 0, 0, 0.7) 100%
+    );
+}
+
+.btn-primary {
+    background: var(--brand-primary);
+    color: white;
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease;
+}
+.btn-primary:hover {
+    background: var(--brand-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -8px rgba(21, 128, 61, 0.4);
+}
+
+.btn-outline {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    transition: all 0.25s ease;
+}
+.btn-outline:hover {
+    background: white;
+    color: #15803d;
+}
+
+.product-card {
+    transition: all 0.35s ease;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    background: white;
+    border: 1px solid #e7e5e4;
+}
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 40px -16px rgba(0, 0, 0, 0.12);
+    border-color: #d6d3d1;
+}
+
+.marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 28s linear infinite;
+}
+@keyframes marquee-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@layer base {
+    :root {
+        --background: 60 9% 98%;
+        --foreground: 24 10% 10%;
+        --card: 0 0% 100%;
+        --card-foreground: 24 10% 10%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 24 10% 10%;
+        --primary: 142 72% 29%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 60 5% 96%;
+        --secondary-foreground: 24 10% 10%;
+        --muted: 60 5% 96%;
+        --muted-foreground: 25 5% 45%;
+        --accent: 60 5% 96%;
+        --accent-foreground: 24 10% 10%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 20 6% 90%;
+        --input: 20 6% 90%;
+        --ring: 142 72% 29%;
+        --radius: 0.75rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+}
