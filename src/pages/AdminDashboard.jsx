@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Plus, Trash2, Loader2, Users, ClipboardList, MapPin, FileSpreadsheet, FileText } from "lucide-react";
+import { LogOut, Plus, Trash2, Loader2, Users, ClipboardList, MapPin, FileSpreadsheet, FileText, History, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const LOGO = "https://customer-assets.emergentagent.com/job_c473f9e5-814c-45ab-92b6-facfece4a340/artifacts/kabbdtfj_maria_logo.jpg";
+
+const STATUS_COLOR = {
+  "Site Visited": "bg-blue-50 text-blue-700",
+  "Materials Delivered": "bg-violet-50 text-violet-700",
+  "Work in Progress": "bg-amber-50 text-amber-700",
+  "Completed": "bg-emerald-50 text-emerald-700",
+  "On Hold": "bg-stone-100 text-stone-700",
+  "Cancelled": "bg-rose-50 text-rose-700",
+};
+const STATUS_FILTERS = ["All", "Site Visited", "Materials Delivered", "Work in Progress", "Completed", "On Hold", "Cancelled"];
+const LOCATION_FILTERS = ["All locations", "Nagercoil", "Monday Market", "Thingalnagar", "Tirunelveli", "Valliyoor"];
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -13,6 +24,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState("submissions");
   const [workers, setWorkers] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [rejected, setRejected] = useState([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newWorker, setNewWorker] = useState({ name: "", email: "", password: "" });
@@ -20,9 +32,14 @@ export default function AdminDashboard() {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [w, s] = await Promise.all([api.get("/admin/workers"), api.get("/admin/submissions")]);
+      const [w, s, r] = await Promise.all([
+        api.get("/admin/workers"),
+        api.get("/admin/submissions"),
+        api.get("/admin/rejected-attempts"),
+      ]);
       setWorkers(w.data);
       setSubmissions(s.data);
+      setRejected(r.data);
     } catch (e) {
       toast.error(formatError(e));
     } finally {
@@ -95,17 +112,21 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
           <StatCard icon={ClipboardList} label="Total Reports" value={submissions.length} />
           <StatCard icon={Users} label="Field Workers" value={workers.length} />
           <StatCard icon={MapPin} label="With GPS" value={submissions.filter((s) => s.geo?.latitude).length} />
+          <StatCard icon={AlertTriangle} label="Rejected (out-of-range)" value={rejected.length} accent={rejected.length > 0 ? "rose" : "stone"} />
         </div>
 
         <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-stone-200">
-            <div className="flex">
+            <div className="flex flex-wrap">
               <TabBtn active={tab === "submissions"} onClick={() => setTab("submissions")} testId="admin-tab-submissions">Submissions</TabBtn>
               <TabBtn active={tab === "workers"} onClick={() => setTab("workers")} testId="admin-tab-workers">Field Workers</TabBtn>
+              <TabBtn active={tab === "rejected"} onClick={() => setTab("rejected")} testId="admin-tab-rejected">
+                Rejected{rejected.length > 0 && <span className="ml-1.5 inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{rejected.length}</span>}
+              </TabBtn>
             </div>
             {tab === "submissions" && submissions.length > 0 && (
               <div className="flex gap-2 px-5 py-3 sm:py-0">
@@ -131,7 +152,7 @@ export default function AdminDashboard() {
             <div className="p-16 text-center text-stone-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
           ) : tab === "submissions" ? (
             <SubmissionsTable items={submissions} />
-          ) : (
+          ) : tab === "workers" ? (
             <WorkersPanel
               workers={workers}
               onRemove={removeWorker}
@@ -140,6 +161,8 @@ export default function AdminDashboard() {
               creating={creating}
               onCreate={createWorker}
             />
+          ) : (
+            <RejectedAttemptsTable items={rejected} />
           )}
         </div>
       </div>
@@ -147,11 +170,16 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value }) {
+function StatCard({ icon: Icon, label, value, accent = "emerald" }) {
+  const accentMap = {
+    emerald: "bg-emerald-50 text-emerald-700",
+    rose: "bg-rose-50 text-rose-700",
+    stone: "bg-stone-100 text-stone-500",
+  };
   return (
     <div className="bg-white rounded-2xl border border-stone-200 p-6 flex items-center gap-4">
-      <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
-        <Icon className="w-6 h-6 text-emerald-700" strokeWidth={1.5} />
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${accentMap[accent]}`}>
+        <Icon className="w-6 h-6" strokeWidth={1.5} />
       </div>
       <div>
         <div className="text-xs uppercase tracking-widest font-semibold text-stone-500">{label}</div>
@@ -170,44 +198,186 @@ function TabBtn({ active, onClick, children, testId }) {
 }
 
 function SubmissionsTable({ items }) {
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [locFilter, setLocFilter] = useState("All locations");
+  const [timelineSub, setTimelineSub] = useState(null);
+
   if (!items.length) return <div className="p-16 text-center text-stone-500">No submissions yet.</div>;
+  const visible = items.filter((s) => {
+    const st = s.status || "Site Visited";
+    if (statusFilter !== "All" && st !== statusFilter) return false;
+    if (locFilter !== "All locations" && (s.location || "") !== locFilter) return false;
+    return true;
+  });
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-stone-50">
-          <tr className="text-left text-xs uppercase tracking-widest text-stone-600">
-            <th className="px-5 py-4">When</th>
-            <th className="px-5 py-4">Client</th>
-            <th className="px-5 py-4">Mobile</th>
-            <th className="px-5 py-4">Worker</th>
-            <th className="px-5 py-4">Site</th>
-            <th className="px-5 py-4">GPS</th>
-            <th className="px-5 py-4">Email</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((s) => (
-            <tr key={s.id} data-testid={`submission-row-${s.id}`} className="border-t border-stone-100 hover:bg-stone-50">
-              <td className="px-5 py-4 text-stone-600 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</td>
-              <td className="px-5 py-4">
-                <div className="font-semibold text-stone-900">{s.client_name}</div>
-                <div className="text-xs text-stone-500">{s.client_company || "—"}</div>
-              </td>
-              <td className="px-5 py-4 text-stone-700">{s.client_mobile}</td>
-              <td className="px-5 py-4 text-stone-700">{s.worker_name}</td>
-              <td className="px-5 py-4 text-stone-700 max-w-xs truncate" title={s.site_address}>{s.site_address || "—"}</td>
-              <td className="px-5 py-4">
-                {s.geo?.latitude ? (
-                  <a href={`https://www.google.com/maps?q=${s.geo.latitude},${s.geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map →</a>
-                ) : "—"}
-              </td>
-              <td className="px-5 py-4">
-                {s.email_sent ? <span className="inline-block px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">Sent</span> : <span className="inline-block px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Failed</span>}
-              </td>
-            </tr>
+    <>
+      <div className="px-5 py-4 border-b border-stone-100 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              data-testid={`admin-status-filter-${s.toLowerCase().replace(/\s+/g, '-')}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${statusFilter === s ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
+            >
+              {s}
+            </button>
           ))}
-        </tbody>
-      </table>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {LOCATION_FILTERS.map((l) => (
+            <button
+              key={l}
+              onClick={() => setLocFilter(l)}
+              data-testid={`admin-loc-filter-${l.toLowerCase().replace(/\s+/g, '-')}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${locFilter === l ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
+            >
+              📍 {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-stone-50">
+            <tr className="text-left text-xs uppercase tracking-widest text-stone-600">
+              <th className="px-5 py-4">When</th>
+              <th className="px-5 py-4">Visit</th>
+              <th className="px-5 py-4">Status</th>
+              <th className="px-5 py-4">Client</th>
+              <th className="px-5 py-4">Location</th>
+              <th className="px-5 py-4">Mobile</th>
+              <th className="px-5 py-4">Worker</th>
+              <th className="px-5 py-4">GPS</th>
+              <th className="px-5 py-4">Email</th>
+              <th className="px-5 py-4 text-right">Timeline</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((s) => {
+              const status = s.status || "Site Visited";
+              const visitN = s.visit_number || 1;
+              return (
+                <tr key={s.id} data-testid={`submission-row-${s.id}`} className="border-t border-stone-100 hover:bg-stone-50">
+                  <td className="px-5 py-4 text-stone-600 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${visitN === 1 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>#{visitN}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${STATUS_COLOR[status] || "bg-stone-100 text-stone-700"}`}>{status}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="font-semibold text-stone-900">{s.client_name}</div>
+                    <div className="text-xs text-stone-500">
+                      {s.client_role && <span className="text-emerald-700 font-semibold">{s.client_role}</span>}
+                      {s.client_role && s.client_company && " · "}
+                      {s.client_company || (!s.client_role && "—")}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-stone-700">
+                    {s.location ? <span className="inline-block px-2 py-0.5 rounded-full bg-stone-100 text-xs font-semibold">📍 {s.location}</span> : <span className="text-stone-400">—</span>}
+                  </td>
+                  <td className="px-5 py-4 text-stone-700">{s.client_mobile}</td>
+                  <td className="px-5 py-4 text-stone-700">{s.worker_name}</td>
+                  <td className="px-5 py-4">
+                    {s.geo?.latitude ? (
+                      <a href={`https://www.google.com/maps?q=${s.geo.latitude},${s.geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map →</a>
+                    ) : "—"}
+                  </td>
+                  <td className="px-5 py-4">
+                    {s.email_sent ? <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">Sent</span> : <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Failed</span>}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <button onClick={() => setTimelineSub(s)} data-testid={`admin-view-timeline-${s.id}`} className="text-emerald-700 hover:text-emerald-800 text-xs font-semibold inline-flex items-center gap-1">
+                      <History className="w-3.5 h-3.5" /> View
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {timelineSub && <TimelineModal sub={timelineSub} onClose={() => setTimelineSub(null)} />}
+    </>
+  );
+}
+
+function TimelineModal({ sub, onClose }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get(`/submissions/${sub.id}/timeline`);
+        setData(res.data);
+      } catch (e) {
+        toast.error(formatError(e));
+      } finally { setLoading(false); }
+    })();
+  }, [sub.id]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div data-testid="admin-timeline-modal" className="bg-white rounded-3xl border border-stone-200 w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white border-b border-stone-200 px-7 py-5 flex justify-between items-start rounded-t-3xl">
+          <div>
+            <div className="label-eyebrow">Client Timeline</div>
+            <h2 className="font-display text-2xl font-bold text-stone-900 mt-1">{sub.client_name}</h2>
+            <div className="text-sm text-stone-600">
+              {sub.client_role && <span className="text-emerald-700 font-semibold">{sub.client_role}</span>}
+              {sub.client_role && " · "}
+              {sub.client_company || "—"} · {sub.client_mobile}
+            </div>
+            {sub.location && <div className="text-xs text-stone-500 mt-1">📍 {sub.location}</div>}
+          </div>
+          <button onClick={onClose} data-testid="admin-timeline-close" className="text-stone-500 hover:text-stone-900"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="p-7">
+          {loading ? (
+            <div className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin text-stone-400 mx-auto" /></div>
+          ) : !data?.visits?.length ? (
+            <div className="text-center text-stone-500 py-10">No visits found.</div>
+          ) : (
+            <div className="relative pl-7">
+              <div className="absolute left-2 top-2 bottom-2 w-px bg-stone-200" />
+              {data.visits.map((v) => {
+                const status = v.status || "Site Visited";
+                return (
+                  <div key={v.id} className="relative mb-6">
+                    <div className="absolute -left-7 top-1.5 w-4 h-4 rounded-full bg-white border-2 border-emerald-600" />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-bold text-stone-900 font-display">Visit #{v.visit_number}</span>
+                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_COLOR[status] || "bg-stone-100 text-stone-700"}`}>{status}</span>
+                      <span className="text-xs text-stone-500">{new Date(v.created_at).toLocaleString()}</span>
+                      {v.distance_from_original_m != null && (
+                        <span className="text-xs text-stone-500">· {v.distance_from_original_m}m from origin</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-stone-700 mt-1.5">{v.notes || <em className="text-stone-400">No notes</em>}</div>
+                    <div className="flex flex-wrap gap-3 text-xs text-stone-500 mt-1.5">
+                      <span>By {v.worker_name}</span>
+                      <span>·</span>
+                      <span>{v.photo_count || 0} photo{v.photo_count === 1 ? "" : "s"}</span>
+                      {v.geo?.latitude && (
+                        <>
+                          <span>·</span>
+                          <a href={`https://www.google.com/maps?q=${v.geo.latitude},${v.geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map</a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -267,3 +437,70 @@ function WorkersPanel({ workers, onRemove, newWorker, setNewWorker, creating, on
     </div>
   );
 }
+
+function RejectedAttemptsTable({ items }) {
+  if (!items.length) {
+    return (
+      <div className="p-16 text-center text-stone-500">
+        <AlertTriangle className="w-10 h-10 mx-auto text-stone-300 mb-3" strokeWidth={1.5} />
+        <div>No rejected attempts. Every follow-up so far was within range. ✅</div>
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-x-auto">
+      <div className="px-5 py-3 bg-rose-50 border-b border-rose-100 text-xs text-rose-800">
+        <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />
+        These follow-up attempts were <strong>blocked</strong> because the worker was outside the allowed radius (or didn't share GPS).
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-stone-50">
+          <tr className="text-left text-xs uppercase tracking-widest text-stone-600">
+            <th className="px-5 py-4">When</th>
+            <th className="px-5 py-4">Worker</th>
+            <th className="px-5 py-4">Client</th>
+            <th className="px-5 py-4">Reason</th>
+            <th className="px-5 py-4">Distance</th>
+            <th className="px-5 py-4">Attempted location</th>
+            <th className="px-5 py-4">Original site</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((r) => (
+            <tr key={r.id} data-testid={`rejected-row-${r.id}`} className="border-t border-stone-100 hover:bg-stone-50">
+              <td className="px-5 py-4 text-stone-600 whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
+              <td className="px-5 py-4">
+                <div className="font-semibold text-stone-900">{r.worker_name}</div>
+                <div className="text-xs text-stone-500">{r.worker_email}</div>
+              </td>
+              <td className="px-5 py-4">
+                <div className="font-semibold text-stone-900">{r.client_name}</div>
+                <div className="text-xs text-stone-500">{r.client_mobile}</div>
+              </td>
+              <td className="px-5 py-4">
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${r.reason === "missing_gps" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"}`}>
+                  {r.reason === "missing_gps" ? "No GPS" : "Out of range"}
+                </span>
+              </td>
+              <td className="px-5 py-4 text-stone-700 font-semibold whitespace-nowrap">
+                {r.distance_m != null ? `${r.distance_m}m` : "—"}
+                <span className="text-stone-400 font-normal text-xs"> / {r.radius_m}m</span>
+              </td>
+              <td className="px-5 py-4">
+                {r.attempted_geo?.latitude ? (
+                  <a href={`https://www.google.com/maps?q=${r.attempted_geo.latitude},${r.attempted_geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map →</a>
+                ) : <span className="text-stone-400">—</span>}
+              </td>
+              <td className="px-5 py-4">
+                {r.original_geo?.latitude ? (
+                  <a href={`https://www.google.com/maps?q=${r.original_geo.latitude},${r.original_geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map →</a>
+                ) : <span className="text-stone-400">—</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
