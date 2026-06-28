@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
 ];
 
 const CLIENT_ROLES = ["Engineer", "Plumber", "Electrician", "Mastri", "Other"];
-const LOCATIONS = ["Nagercoil", "Monday Market", "Thingalnagar", "Tirunelveli", "Valliyoor"];
+const LOCATIONS = ["Nagercoil", "Monday Market", "Thingalnagar", "Tirunelveli", "Valliyoor", "Other"];
 
 const STATUS_COLOR = {
   "Site Visited": "bg-blue-50 text-blue-700",
@@ -164,7 +164,8 @@ function MyReportsList({ reports, onRefresh, onFollowUp }) {
 function NewSubmissionForm({ onDone }) {
   const [form, setForm] = useState({
     client_name: "", client_company: "", client_mobile: "", client_email: "",
-    client_role: "", client_role_other: "", location: "",
+    client_role: "", client_role_other: "",
+    location: "", location_other: "",
     site_address: "", notes: "", latitude: "", longitude: "", status: "Site Visited",
   });
   const [photos, setPhotos] = useState([null, null, null]);
@@ -202,11 +203,15 @@ function NewSubmissionForm({ onDone }) {
       const effectiveRole = form.client_role === "Other"
         ? (form.client_role_other.trim() || "Other")
         : form.client_role;
+      const effectiveLocation = form.location === "Other"
+        ? (form.location_other.trim() || "Other")
+        : form.location;
       Object.entries(form).forEach(([k, v]) => {
-        if (k === "client_role" || k === "client_role_other") return;
+        if (["client_role", "client_role_other", "location", "location_other"].includes(k)) return;
         fd.append(k, v);
       });
       fd.append("client_role", effectiveRole);
+      fd.append("location", effectiveLocation);
       photos.forEach((p, i) => { if (p) fd.append(`photo${i + 1}`, p); });
       const { data } = await api.post("/field/submit", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setSubmittedClient({ client_name: form.client_name, client_mobile: form.client_mobile, status: form.status });
@@ -263,7 +268,12 @@ function NewSubmissionForm({ onDone }) {
       <Section title="Client Details">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field label="Client Name *" testId="field-client-name" value={form.client_name} onChange={handle("client_name")} required />
-          <RoleSelect value={form.client_role} onChange={handle("client_role")} />
+          <RoleSelect
+            value={form.client_role}
+            onChange={handle("client_role")}
+            otherValue={form.client_role_other}
+            onOtherChange={handle("client_role_other")}
+          />
           <Field label="Client Company" testId="field-client-company" value={form.client_company} onChange={handle("client_company")} />
           <Field label="Client Mobile *" testId="field-client-mobile" value={form.client_mobile} onChange={handle("client_mobile")} required />
           <Field label="Client Email" testId="field-client-email" type="email" value={form.client_email} onChange={handle("client_email")} />
@@ -273,7 +283,12 @@ function NewSubmissionForm({ onDone }) {
       <Section title="This Visit">
         <Field label="Site Address / Description" testId="field-site-address" value={form.site_address} onChange={handle("site_address")} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <LocationSelect value={form.location} onChange={handle("location")} />
+          <LocationSelect
+            value={form.location}
+            onChange={handle("location")}
+            otherValue={form.location_other}
+            onOtherChange={handle("location_other")}
+          />
           <StatusSelect value={form.status} onChange={handle("status")} testId="field-status" />
         </div>
         <GpsRow form={form} setForm={setForm} gpsLoading={gpsLoading} getGPS={getGPS} required={false} />
@@ -485,7 +500,7 @@ function StatusSelect({ value, onChange, testId }) {
   );
 }
 
-function LocationSelect({ value, onChange }) {
+function LocationSelect({ value, onChange, otherValue, onOtherChange }) {
   return (
     <div>
       <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Location</label>
@@ -493,6 +508,16 @@ function LocationSelect({ value, onChange }) {
         <option value="">— Select location —</option>
         {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
       </select>
+      {value === "Other" && (
+        <input
+          data-testid="field-location-other"
+          value={otherValue || ""}
+          onChange={onOtherChange}
+          placeholder="Type location (e.g. Kanyakumari, Marthandam...)"
+          maxLength={50}
+          className="mt-2 w-full rounded-xl border border-emerald-400 px-4 py-3 focus:ring-2 focus:ring-emerald-600 outline-none"
+        />
+      )}
     </div>
   );
 }
