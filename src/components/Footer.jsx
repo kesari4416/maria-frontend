@@ -13,7 +13,7 @@ export default function Footer() {
           <div className="flex items-center gap-3 mb-5">
             <img src={LOGO} alt="MG" className="w-14 h-14 rounded-full" />
             <div>
-              <div className="font-display text-xl font-bold text-white">Maria Glass & Plywood</div>
+              <div className="font-display text-xl font-bold text-white">Maria Glass & Plywoods</div>
               <div className="text-xs tracking-[0.2em] uppercase text-emerald-400">Trusted in Kanyakumari</div>
             </div>
           </div>
@@ -67,7 +67,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-stone-800">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 py-5 text-xs text-stone-500 flex flex-col sm:flex-row justify-between gap-2">
-          <div>© {new Date().getFullYear()} Maria Glass & Plywood. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} Maria Glass & Plywoods. All rights reserved.</div>
           <div>Crafted with care · Quality you can build on.</div>
         </div>
       </div>

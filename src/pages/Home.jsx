@@ -67,7 +67,7 @@ export default function Home() {
             Building trust in every sheet, pane and panel.
           </h2>
           <p className="mt-6 text-stone-600 leading-relaxed">
-            Maria Glass & Plywood is your trusted destination for high-quality glass, plywood, and hardware solutions in Nagercoil. With years of industry expertise, we offer a curated selection that meets the demands of architects, contractors and homeowners alike.
+            Maria Glass & Plywoods is your trusted destination for high-quality glass, plywood, and hardware solutions in Nagercoil. With years of industry expertise, we offer a curated selection that meets the demands of architects, contractors and homeowners alike.
           </p>
           <p className="mt-4 text-stone-600 leading-relaxed">
             Committed to quality and customer satisfaction, we deliver personalized service for both residential and commercial projects — experience excellence with Maria.
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="lg:col-span-6 relative">
           <img src={ABOUT_IMG} alt="Maria Glass showroom" className="rounded-3xl w-full h-[440px] object-cover" />
           <div className="absolute -bottom-6 -left-6 hidden md:block bg-emerald-700 text-white p-6 rounded-2xl shadow-xl">
-            <div className="text-3xl font-bold font-display">14+</div>
+            <div className="text-3xl font-bold font-display">20+</div>
             <div className="text-xs tracking-[0.2em] uppercase mt-1">Years of trust</div>
           </div>
         </div>
