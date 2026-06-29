@@ -21,7 +21,7 @@ Thingalnagar,
 Kanniyakumari,
 Tamil Nadu - 629802`,
     mobile: "+91 75400 22411",
-    mapLink: "https://share.google/g4AQZo1Tyn1ss0eJI",
+    mapLink: "https://maps.app.goo.gl/BfLk7AtBVb6WN1PH9",
   },
 
   Valliyoor: {
@@ -32,7 +32,7 @@ Main Road, Near Court,
 Valliyoor,
 Tirunelveli - 627117`,
     mobile: "+91 99441 09603",
-    mapLink: "https://share.google/Syskf2htqrO0fIhc4",
+    mapLink: "https://maps.app.goo.gl/vvjZ9s12GrctyB1F8",
   },
 
   Thisayanvilai: {
@@ -43,7 +43,7 @@ Thisayanvilai,
 Tirunelveli,
 Tamil Nadu - 627657`,
     mobile: "+91 81224 25564",
-    mapLink: "https://share.google/EDqlrDtJG2DlKf2gN",
+    mapLink: "https://maps.app.goo.gl/4cpz9mvJAW4pXiMd8",
   },
 };
 
