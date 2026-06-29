@@ -18,7 +18,7 @@ const categories = [
     img: "https://images.pexels.com/photos/33410957/pexels-photo-33410957.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
   },
   {
-    name: "Engineered Plywood",
+    name: "Engineered Plywoods",
     desc: "Sharon, Century, Green, HDMR sheets & Sunmica.",
     img: "https://images.unsplash.com/photo-1700973408133-b45276ec8feb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxwbHl3b29kJTIwc3RhY2t8ZW58MHx8fHwxNzgyMjc3Njk1fDA&ixlib=rb-4.1.0&q=85",
   },
