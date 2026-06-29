@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
 ];
 
 const CLIENT_ROLES = ["Engineer", "Plumber", "Electrician", "Mastri", "Other"];
-const LOCATIONS = ["Nagercoil", "Monday Market", "Thingalnagar", "Tirunelveli", "Valliyoor", "Other"];
+const LOCATIONS = ["Nagercoil", "Monday Market", "Valliyoor", "Thisayanvilai"];
 
 const STATUS_COLOR = {
   "Site Visited": "bg-blue-50 text-blue-700",
@@ -48,6 +48,10 @@ export default function FieldDashboard() {
   };
 
   useEffect(() => { refreshReports(); }, []);
+  // Auto-refetch whenever the worker switches to the "My Reports" tab
+  useEffect(() => {
+    if (tab === "reports") refreshReports();
+  }, [tab]);
 
   const openFollowUp = async (report) => {
     setFollowUpTarget(report);
@@ -165,7 +169,7 @@ function NewSubmissionForm({ onDone }) {
   const [form, setForm] = useState({
     client_name: "", client_company: "", client_mobile: "", client_email: "",
     client_role: "", client_role_other: "",
-    location: "", location_other: "",
+    location: "",
     site_address: "", notes: "", latitude: "", longitude: "", status: "Site Visited",
   });
   const [photos, setPhotos] = useState([null, null, null]);
@@ -203,28 +207,23 @@ function NewSubmissionForm({ onDone }) {
       const effectiveRole = form.client_role === "Other"
         ? (form.client_role_other.trim() || "Other")
         : form.client_role;
-      const effectiveLocation = form.location === "Other"
-        ? (form.location_other.trim() || "Other")
-        : form.location;
       Object.entries(form).forEach(([k, v]) => {
-        if (["client_role", "client_role_other", "location", "location_other"].includes(k)) return;
+        if (["client_role", "client_role_other"].includes(k)) return;
         fd.append(k, v);
       });
       fd.append("client_role", effectiveRole);
-      fd.append("location", effectiveLocation);
       photos.forEach((p, i) => { if (p) fd.append(`photo${i + 1}`, p); });
       const { data } = await api.post("/field/submit", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      setSubmittedClient({ client_name: form.client_name, client_mobile: form.client_mobile, status: form.status });
+      setSubmittedClient({ client_name: form.client_name, client_mobile: form.client_mobile, status: form.status, location: form.location });
       setSubmitted(true);
-      if (data.email_sent) toast.success(`Visit #1 submitted & emailed (${data.photo_count} photo${data.photo_count === 1 ? "" : "s"})`);
-      else toast.warning("Saved, but email delivery failed");
+      toast.success(`Visit #1 submitted (${data.photo_count} photo${data.photo_count === 1 ? "" : "s"}). HQ email being sent...`);
     } catch (err) {
       toast.error(formatError(err));
     } finally { setLoading(false); }
   };
 
   if (submitted) {
-    const waLink = whatsappLink({ mobile: submittedClient?.client_mobile, client_name: submittedClient?.client_name, status: "initial" });
+    const waLink = whatsappLink({ mobile: submittedClient?.client_mobile, client_name: submittedClient?.client_name, status: "initial", location: submittedClient?.location });
     const hasMobile = !!normalizeWhatsApp(submittedClient?.client_mobile);
     return (
       <div className="p-12 text-center">
@@ -232,7 +231,7 @@ function NewSubmissionForm({ onDone }) {
         <h2 className="font-display text-2xl font-bold text-stone-900 mt-4">Visit #1 submitted!</h2>
         <p className="text-stone-600 mt-2">Your initial site report has been sent to HQ.</p>
 
-        {hasMobile && (
+        {hasMobile ? (
           <div className="mt-6 mx-auto max-w-lg bg-emerald-50 rounded-2xl border border-emerald-200 p-5 text-left">
             <div className="flex items-start gap-3">
               <span className="whatsapp-pulse w-11 h-11 flex-shrink-0 rounded-full bg-[#25D366] flex items-center justify-center">
@@ -240,12 +239,16 @@ function NewSubmissionForm({ onDone }) {
               </span>
               <div className="flex-1">
                 <div className="font-semibold text-stone-900">Send a thank-you to {submittedClient.client_name}?</div>
-                <p className="text-xs text-stone-600 mt-1">Tap below to open WhatsApp with a pre-written message from {submittedClient.client_name ? "" : ""}Maria Glass &amp; Plywood. The message will be sent from your phone.</p>
+                <p className="text-xs text-stone-600 mt-1">Tap below to open WhatsApp with a pre-written message from Maria Glass &amp; Plywood. The message will be sent from your phone.</p>
                 <a href={waLink} target="_blank" rel="noreferrer" data-testid="field-wa-send-client" className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white px-5 py-2.5 text-sm font-semibold">
                   <WhatsAppIcon className="w-4 h-4" /> Send WhatsApp to {submittedClient.client_name || "client"}
                 </a>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="mt-6 mx-auto max-w-lg bg-amber-50 rounded-2xl border border-amber-200 p-4 text-left text-sm text-amber-900" data-testid="field-wa-unavailable">
+            <strong>WhatsApp share unavailable.</strong> The client mobile number "{submittedClient?.client_mobile || "(empty)"}" wasn't a valid 10-digit Indian number. Please re-enter it in the next submission to enable one-tap WhatsApp.
           </div>
         )}
 
@@ -283,12 +286,7 @@ function NewSubmissionForm({ onDone }) {
       <Section title="This Visit">
         <Field label="Site Address / Description" testId="field-site-address" value={form.site_address} onChange={handle("site_address")} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <LocationSelect
-            value={form.location}
-            onChange={handle("location")}
-            otherValue={form.location_other}
-            onOtherChange={handle("location_other")}
-          />
+          <LocationSelect value={form.location} onChange={handle("location")} />
           <StatusSelect value={form.status} onChange={handle("status")} testId="field-status" />
         </div>
         <GpsRow form={form} setForm={setForm} gpsLoading={gpsLoading} getGPS={getGPS} required={false} />
@@ -340,8 +338,7 @@ function FollowUpForm({ target, timeline, onCancel, onDone }) {
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
       photos.forEach((p, i) => { if (p) fd.append(`photo${i + 1}`, p); });
       const { data } = await api.post(`/field/follow-up/${target.id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
-      if (data.email_sent) toast.success(`Visit #${data.visit_number} submitted (${data.distance_from_original_m ?? "—"}m from original)`);
-      else toast.warning("Saved, but email failed");
+      toast.success(`Visit #${data.visit_number} submitted (${data.distance_from_original_m ?? "—"}m from original). HQ email being sent...`);
       setSuccess({ visit_number: data.visit_number, status: form.status, distance_m: data.distance_from_original_m });
     } catch (err) {
       toast.error(formatError(err));
@@ -349,7 +346,7 @@ function FollowUpForm({ target, timeline, onCancel, onDone }) {
   };
 
   if (success) {
-    const waLink = whatsappLink({ mobile: target.client_mobile, client_name: target.client_name, status: success.status });
+    const waLink = whatsappLink({ mobile: target.client_mobile, client_name: target.client_name, status: success.status, location: target.location });
     const hasMobile = !!normalizeWhatsApp(target.client_mobile);
     return (
       <div className="max-w-5xl mx-auto px-6 py-8">
@@ -500,7 +497,7 @@ function StatusSelect({ value, onChange, testId }) {
   );
 }
 
-function LocationSelect({ value, onChange, otherValue, onOtherChange }) {
+function LocationSelect({ value, onChange }) {
   return (
     <div>
       <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Location</label>
@@ -508,16 +505,6 @@ function LocationSelect({ value, onChange, otherValue, onOtherChange }) {
         <option value="">— Select location —</option>
         {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
       </select>
-      {value === "Other" && (
-        <input
-          data-testid="field-location-other"
-          value={otherValue || ""}
-          onChange={onOtherChange}
-          placeholder="Type location (e.g. Kanyakumari, Marthandam...)"
-          maxLength={50}
-          className="mt-2 w-full rounded-xl border border-emerald-400 px-4 py-3 focus:ring-2 focus:ring-emerald-600 outline-none"
-        />
-      )}
     </div>
   );
 }

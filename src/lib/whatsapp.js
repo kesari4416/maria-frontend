@@ -1,3 +1,5 @@
+import { getBranch, COMMON } from "@/lib/branches";
+
 // Normalize phone numbers to E.164-like format for wa.me (no +, no spaces)
 // India default country code = 91 if missing.
 export function normalizeWhatsApp(raw) {
@@ -11,72 +13,70 @@ export function normalizeWhatsApp(raw) {
 }
 
 const COMPANY = "Maria Glass & Plywood";
-const PHONE = "+91 99946 11220";
 
-const MESSAGES = {
-  initial: (client) =>
-`Hello ${client || "there"},
+const buildInitial = (client, location) => {
+  const b = getBranch(location);
+  return `Hello ${client || "there"},
 
-Thank you for contacting *${COMPANY}*! 🙏
+Thank you for contacting *${COMPANY}*! 😊
 
-Our field team has just visited your site and noted your requirements. We will share the quote and next steps shortly.
+Our field team has visited your site and noted your requirements. We are currently preparing your quotation and will share it with you shortly, along with the next steps.
 
-For any urgent queries, please call ${PHONE}.
+📍 *${b.branch}*
 
-— Team ${COMPANY}`,
+${b.address}
 
-  "Materials Delivered": (client) =>
-`Hello ${client || "there"},
+📞 Mobile: ${b.mobile}
 
-This is *${COMPANY}*. Your materials have been delivered to your site today. ✅
+📍 Location: ${b.mapLink}
 
-Please verify and let us know if anything is missing. Our team is happy to assist.
+📸 Instagram: ${COMMON.instagram}
 
-Call: ${PHONE}
+If you have any urgent queries, please feel free to contact us at ${COMMON.urgentMobile}.
 
-— Team ${COMPANY}`,
+Thank you for choosing ${COMPANY}. We look forward to serving you!
 
-  "Work in Progress": (client) =>
-`Hello ${client || "there"},
-
-Update from *${COMPANY}*: work at your site is in progress. 🛠️
-
-We will keep you posted on every stage. For any questions, please call ${PHONE}.
-
-— Team ${COMPANY}`,
-
-  "Completed": (client) =>
-`Hello ${client || "there"},
-
-Great news! Your project with *${COMPANY}* is now complete. ✨
-
-Thank you for trusting us with your space. We would love your feedback — and your referrals!
-
-Call: ${PHONE}
-
-— Team ${COMPANY}`,
-
-  "On Hold": (client) =>
-`Hello ${client || "there"},
-
-This is *${COMPANY}*. Work at your site is temporarily on hold. Our team will reach out to you shortly with details.
-
-For immediate queries, please call ${PHONE}.
-
-— Team ${COMPANY}`,
-
-  "Cancelled": (client) =>
-`Hello ${client || "there"},
-
-This is *${COMPANY}* regarding your project. We have noted a cancellation. Please call ${PHONE} so we can confirm and assist you further.
-
-— Team ${COMPANY}`,
+Warm regards,
+Team ${COMPANY}`;
 };
 
-export function whatsappLink({ mobile, client_name, status }) {
+const buildStatus = (client, location, headline) => {
+  const b = getBranch(location);
+  return `Hello ${client || "there"},
+
+${headline}
+
+📍 *${b.branch}*
+
+${b.address}
+
+📞 Mobile: ${b.mobile}
+📞 Urgent: ${COMMON.urgentMobile}
+
+📸 Instagram: ${COMMON.instagram}
+
+Warm regards,
+Team ${COMPANY}`;
+};
+
+const STATUS_HEADLINE = {
+  "Materials Delivered": `This is *${COMPANY}*. Your materials have been delivered to your site today. ✅ Please verify and let us know if anything is missing.`,
+  "Work in Progress": `Update from *${COMPANY}*: work at your site is in progress. 🛠️ We will keep you posted on every stage.`,
+  "Completed": `Great news! Your project with *${COMPANY}* is now complete. ✨ Thank you for trusting us with your space.`,
+  "On Hold": `This is *${COMPANY}*. Work at your site is temporarily on hold. Our team will reach out to you shortly with details.`,
+  "Cancelled": `This is *${COMPANY}* regarding your project. We have noted a cancellation — please call us so we can confirm and assist you further.`,
+};
+
+export function whatsappLink({ mobile, client_name, status, location }) {
   const num = normalizeWhatsApp(mobile);
   if (!num) return null;
-  const builder = (status && MESSAGES[status]) || MESSAGES.initial;
-  const text = encodeURIComponent(builder(client_name));
-  return `https://wa.me/${num}?text=${text}`;
+  let body;
+  if (!status || status === "initial" || status === "Site Visited") {
+    body = buildInitial(client_name, location);
+  } else if (STATUS_HEADLINE[status]) {
+    body = buildStatus(client_name, location, STATUS_HEADLINE[status]);
+  } else {
+    body = buildInitial(client_name, location);
+  }
+  return `https://wa.me/${num}?text=${encodeURIComponent(body)}`;
 }

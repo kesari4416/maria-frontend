@@ -18,7 +18,7 @@ const categories = [
     img: "https://images.pexels.com/photos/33410957/pexels-photo-33410957.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
   },
   {
-    name: "Engineered Plywoods",
+    name: "Engineered Plywood",
     desc: "Sharon, Century, Green, HDMR sheets & Sunmica.",
     img: "https://images.unsplash.com/photo-1700973408133-b45276ec8feb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxwbHl3b29kJTIwc3RhY2t8ZW58MHx8fHwxNzgyMjc3Njk1fDA&ixlib=rb-4.1.0&q=85",
   },
@@ -67,7 +67,7 @@ export default function Home() {
             Building trust in every sheet, pane and panel.
           </h2>
           <p className="mt-6 text-stone-600 leading-relaxed">
-            Maria Glass & Plywoods is your trusted destination for high-quality glass, plywood, and hardware solutions in Nagercoil. With years of industry expertise, we offer a curated selection that meets the demands of architects, contractors and homeowners alike.
+            Maria Glass & Plywood is your trusted destination for high-quality glass, plywood, and hardware solutions in Nagercoil. With years of industry expertise, we offer a curated selection that meets the demands of architects, contractors and homeowners alike.
           </p>
           <p className="mt-4 text-stone-600 leading-relaxed">
             Committed to quality and customer satisfaction, we deliver personalized service for both residential and commercial projects — experience excellence with Maria.
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="lg:col-span-6 relative">
           <img src={ABOUT_IMG} alt="Maria Glass showroom" className="rounded-3xl w-full h-[440px] object-cover" />
           <div className="absolute -bottom-6 -left-6 hidden md:block bg-emerald-700 text-white p-6 rounded-2xl shadow-xl">
-            <div className="text-3xl font-bold font-display">20+</div>
+            <div className="text-3xl font-bold font-display">14+</div>
             <div className="text-xs tracking-[0.2em] uppercase mt-1">Years of trust</div>
           </div>
         </div>

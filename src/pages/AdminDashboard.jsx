@@ -16,7 +16,7 @@ const STATUS_COLOR = {
   "Cancelled": "bg-rose-50 text-rose-700",
 };
 const STATUS_FILTERS = ["All", "Site Visited", "Materials Delivered", "Work in Progress", "Completed", "On Hold", "Cancelled"];
-const LOCATION_FILTERS = ["All locations", "Nagercoil", "Monday Market", "Thingalnagar", "Tirunelveli", "Valliyoor"];
+const LOCATION_FILTERS = ["All locations", "Nagercoil", "Monday Market", "Valliyoor", "Thisayanvilai"];
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -503,4 +503,3 @@ function RejectedAttemptsTable({ items }) {
     </div>
   );
 }
-

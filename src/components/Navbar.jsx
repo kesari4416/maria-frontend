@@ -22,7 +22,7 @@ export default function Navbar() {
     <header className="glass-nav sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 flex items-center justify-between h-20">
         <Link to="/" className="flex items-center gap-3" data-testid="nav-logo">
-          <img src={LOGO} alt="Maria Glass & Plywoods" className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100" />
+          <img src={LOGO} alt="Maria Glass & Plywood" className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100" />
           <div className="leading-tight">
             <div className="font-display font-bold text-lg text-stone-900">Maria Glass & Plywoods</div>
             <div className="text-[10px] tracking-[0.2em] uppercase text-emerald-700 font-semibold">Nagercoil · Since 2006</div>
@@ -48,11 +48,11 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <a
-            href="tel:+919994611220"
+            href="tel:+916379517048"
             data-testid="nav-call"
             className="flex items-center gap-2 text-sm font-semibold text-stone-800 hover:text-emerald-700"
           >
-            <Phone className="w-4 h-4" /> 99946 11220
+            <Phone className="w-4 h-4" /> 6379517048
           </a>
           <a
             href={WHATSAPP_URL}

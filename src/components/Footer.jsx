@@ -35,7 +35,7 @@ export default function Footer() {
             </span>
             <span className="text-left">
               <span className="block text-[10px] tracking-[0.2em] uppercase text-emerald-100 font-semibold">Chat with us</span>
-              <span className="block font-semibold text-sm">+91 99946 11220</span>
+              <span className="block font-semibold text-sm">+91 6379517048</span>
             </span>
           </a>
         </div>
@@ -56,12 +56,12 @@ export default function Footer() {
           <div className="label-eyebrow text-emerald-400 mb-4">Reach Us</div>
           <ul className="space-y-3 text-sm">
             <li className="flex gap-2"><MapPin className="w-4 h-4 mt-0.5 text-emerald-400" /> 29/10-B, Beach Road, Nagercoil, Kanyakumari, Tamil Nadu — 629002</li>
-            <li className="flex gap-2"><Phone className="w-4 h-4 mt-0.5 text-emerald-400" /> <a href="tel:+919994611220" className="hover:text-white">+91 99946 11220</a></li>
+            <li className="flex gap-2"><Phone className="w-4 h-4 mt-0.5 text-emerald-400" /> <a href="tel:+916379517048" className="hover:text-white">+91 6379517048</a></li>
             <li className="flex gap-2 items-start">
               <WhatsAppIcon className="w-4 h-4 mt-0.5 text-[#25D366]" />
               <a href={WHATSAPP_URL} target="_blank" rel="noreferrer noopener" className="hover:text-white">WhatsApp us</a>
             </li>
-            <li className="flex gap-2"><Mail className="w-4 h-4 mt-0.5 text-emerald-400" /> info@mariaglassplywood.com</li>
+            <li className="flex gap-2"><Mail className="w-4 h-4 mt-0.5 text-emerald-400" /> mariaglassonline@gmail.com</li>
           </ul>
         </div>
       </div>
