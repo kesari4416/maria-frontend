@@ -18,7 +18,7 @@ export default function About() {
           A name Kanyakumari trusts for building materials.
         </h1>
         <p className="mt-6 text-lg text-stone-600 leading-relaxed">
-          Founded with a simple goal — to make premium glass, plywood, doors and hardware accessible to every builder, architect and homeowner in our region — Maria Glass & Plywood has grown into a name builders rely on.
+          Founded with a simple goal — to make premium glass, plywoods, doors and hardware accessible to every builder, architect and homeowner in our region — Maria Glass & Plywood has grown into a name builders rely on.
         </p>
       </div>
 
