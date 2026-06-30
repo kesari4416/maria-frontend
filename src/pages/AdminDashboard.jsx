@@ -239,59 +239,67 @@ function SubmissionsTable({ items }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="w-full">
+        <table className="w-full text-sm table-fixed">
           <thead className="bg-stone-50">
-            <tr className="text-left text-xs uppercase tracking-widest text-stone-600">
-              <th className="px-5 py-4">When</th>
-              <th className="px-5 py-4">Visit</th>
-              <th className="px-5 py-4">Status</th>
-              <th className="px-5 py-4">Client</th>
-              <th className="px-5 py-4">Location</th>
-              <th className="px-5 py-4">Mobile</th>
-              <th className="px-5 py-4">Worker</th>
-              <th className="px-5 py-4">GPS</th>
-              <th className="px-5 py-4">Email</th>
-              <th className="px-5 py-4 text-right">Timeline</th>
+            <tr className="text-left text-xs uppercase tracking-wider text-stone-600">
+              <th className="px-2 py-2.5">When</th>
+              <th className="px-2 py-2.5">Status</th>
+              <th className="px-2 py-2.5">Client</th>
+              <th className="px-2 py-2.5">Location</th>
+              <th className="px-2 py-2.5">Mobile</th>
+              <th className="px-2 py-2.5">Worker</th>
+              <th className="px-2 py-2.5 text-center">Map</th>
+              <th className="px-2 py-2.5 text-right">View</th>
             </tr>
           </thead>
           <tbody>
             {visible.map((s) => {
               const status = s.status || "Site Visited";
               const visitN = s.visit_number || 1;
+              const d = new Date(s.created_at);
+              const dateShort = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+              const timeShort = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
               return (
-                <tr key={s.id} data-testid={`submission-row-${s.id}`} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-5 py-4 text-stone-600 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${visitN === 1 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>#{visitN}</span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${STATUS_COLOR[status] || "bg-stone-100 text-stone-700"}`}>{status}</span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="font-semibold text-stone-900">{s.client_name}</div>
-                    <div className="text-xs text-stone-500">
-                      {s.client_role && <span className="text-emerald-700 font-semibold">{s.client_role}</span>}
-                      {s.client_role && s.client_company && " · "}
-                      {s.client_company || (!s.client_role && "—")}
+                <tr key={s.id} data-testid={`submission-row-${s.id}`} className="border-t border-stone-100 hover:bg-stone-50 align-middle">
+                  <td className="px-2 py-2 text-stone-600 text-xs truncate">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span
+                        title={s.email_sent ? "Email sent" : "Email failed"}
+                        className={`inline-block w-2 h-2 rounded-full shrink-0 ${s.email_sent ? "bg-emerald-500" : "bg-amber-500"}`}
+                      />
+                      <span className="truncate">{dateShort} {timeShort}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-stone-700">
-                    {s.location ? <span className="inline-block px-2 py-0.5 rounded-full bg-stone-100 text-xs font-semibold">📍 {s.location}</span> : <span className="text-stone-400">—</span>}
+                  <td className="px-2 py-2 truncate">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold mr-1 ${visitN === 1 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>#{visitN}</span>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLOR[status] || "bg-stone-100 text-stone-700"}`}>{status}</span>
                   </td>
-                  <td className="px-5 py-4 text-stone-700">{s.client_mobile}</td>
-                  <td className="px-5 py-4 text-stone-700">{s.worker_name}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-2 py-2 truncate">
+                    <div className="font-semibold text-stone-900 text-sm truncate" title={s.client_name}>{s.client_name}</div>
+                    {s.client_role && <div className="text-xs text-emerald-700 font-semibold truncate">{s.client_role}</div>}
+                  </td>
+                  <td className="px-2 py-2 truncate">
+                    {s.location ? <span className="inline-block px-2 py-0.5 rounded-full bg-stone-100 text-xs font-semibold truncate max-w-full" title={s.location}>📍 {s.location}</span> : <span className="text-stone-400 text-xs">—</span>}
+                  </td>
+                  <td className="px-2 py-2 text-stone-700 text-sm truncate" title={s.client_mobile}>{s.client_mobile}</td>
+                  <td className="px-2 py-2 text-stone-700 text-sm truncate" title={s.worker_name}>{s.worker_name}</td>
+                  <td className="px-2 py-2 text-center">
                     {s.geo?.latitude ? (
-                      <a href={`https://www.google.com/maps?q=${s.geo.latitude},${s.geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map →</a>
-                    ) : "—"}
+                      <a
+                        href={`https://www.google.com/maps?q=${s.geo.latitude},${s.geo.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Open on Google Maps"
+                        className="text-emerald-700 hover:text-emerald-800 inline-flex items-center justify-center"
+                      >
+                        <MapPin className="w-5 h-5" />
+                      </a>
+                    ) : <span className="text-stone-300 text-xs">—</span>}
                   </td>
-                  <td className="px-5 py-4">
-                    {s.email_sent ? <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">Sent</span> : <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Failed</span>}
-                  </td>
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-2 py-2 text-right">
                     <button onClick={() => setTimelineSub(s)} data-testid={`admin-view-timeline-${s.id}`} className="text-emerald-700 hover:text-emerald-800 text-xs font-semibold inline-flex items-center gap-1">
-                      <History className="w-3.5 h-3.5" /> View
+                      <History className="w-4 h-4" /> View
                     </button>
                   </td>
                 </tr>
@@ -310,21 +318,30 @@ function TimelineModal({ sub, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchTimeline = async () => {
+    try {
+      const res = await api.get(`/submissions/${sub.id}/timeline`);
+      setData(res.data);
+    } catch (e) {
+      toast.error(formatError(e));
+    } finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get(`/submissions/${sub.id}/timeline`);
-        setData(res.data);
-      } catch (e) {
-        toast.error(formatError(e));
-      } finally { setLoading(false); }
-    })();
+    fetchTimeline();
   }, [sub.id]);
+
+  const handleNoteAdded = (visitId, admin_notes) => {
+    setData((d) => d ? {
+      ...d,
+      visits: d.visits.map((v) => v.id === visitId ? { ...v, admin_notes } : v),
+    } : d);
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div data-testid="admin-timeline-modal" className="bg-white rounded-3xl border border-stone-200 w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white border-b border-stone-200 px-7 py-5 flex justify-between items-start rounded-t-3xl">
+        <div className="sticky top-0 z-20 bg-white border-b border-stone-200 px-7 py-5 flex justify-between items-start rounded-t-3xl">
           <div>
             <div className="label-eyebrow">Client Timeline</div>
             <h2 className="font-display text-2xl font-bold text-stone-900 mt-1">{sub.client_name}</h2>
@@ -349,7 +366,7 @@ function TimelineModal({ sub, onClose }) {
               {data.visits.map((v) => {
                 const status = v.status || "Site Visited";
                 return (
-                  <div key={v.id} className="relative mb-6">
+                  <div key={v.id} className="relative mb-7" data-testid={`admin-visit-${v.id}`}>
                     <div className="absolute -left-7 top-1.5 w-4 h-4 rounded-full bg-white border-2 border-emerald-600" />
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="font-bold text-stone-900 font-display">Visit #{v.visit_number}</span>
@@ -359,24 +376,130 @@ function TimelineModal({ sub, onClose }) {
                         <span className="text-xs text-stone-500">· {v.distance_from_original_m}m from origin</span>
                       )}
                     </div>
-                    <div className="text-sm text-stone-700 mt-1.5">{v.notes || <em className="text-stone-400">No notes</em>}</div>
-                    <div className="flex flex-wrap gap-3 text-xs text-stone-500 mt-1.5">
-                      <span>By {v.worker_name}</span>
-                      <span>·</span>
-                      <span>{v.photo_count || 0} photo{v.photo_count === 1 ? "" : "s"}</span>
-                      {v.geo?.latitude && (
-                        <>
-                          <span>·</span>
-                          <a href={`https://www.google.com/maps?q=${v.geo.latitude},${v.geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map</a>
-                        </>
-                      )}
+
+                    <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3">
+                      <div className="text-[11px] uppercase tracking-widest font-semibold text-stone-500 mb-1">Field Worker Response</div>
+                      <div className="text-sm text-stone-800 whitespace-pre-wrap">{v.notes || <em className="text-stone-400">No notes from worker</em>}</div>
+                      <div className="flex flex-wrap gap-3 text-xs text-stone-500 mt-2">
+                        <span>By {v.worker_name}</span>
+                        <span>·</span>
+                        <span>{v.photo_count || 0} photo{v.photo_count === 1 ? "" : "s"}</span>
+                        {v.geo?.latitude && (
+                          <>
+                            <span>·</span>
+                            <a href={`https://www.google.com/maps?q=${v.geo.latitude},${v.geo.longitude}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-semibold">Map</a>
+                          </>
+                        )}
+                      </div>
                     </div>
+
+                    <AdminNotesBlock visit={v} onNoteAdded={handleNoteAdded} />
                   </div>
                 );
               })}
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminNotesBlock({ visit, onNoteAdded }) {
+  const [text, setText] = useState("");
+  const [noteStatus, setNoteStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const notes = visit.admin_notes || [];
+  const NOTE_STATUSES = ["Site Visited", "Materials Delivered", "Work in Progress", "Completed", "On Hold", "Cancelled"];
+
+  const addNote = async () => {
+    const t = text.trim();
+    if (!t) return;
+    setSaving(true);
+    try {
+      const res = await api.post(`/admin/visit/${visit.id}/note`, { text: t, status: noteStatus || null });
+      onNoteAdded(visit.id, res.data.admin_notes);
+      setText("");
+      setNoteStatus("");
+      toast.success("Admin note added");
+    } catch (e) {
+      toast.error(formatError(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteNote = async (noteId) => {
+    if (!window.confirm("Delete this admin note?")) return;
+    try {
+      const res = await api.delete(`/admin/visit/${visit.id}/note/${noteId}`);
+      onNoteAdded(visit.id, res.data.admin_notes);
+      toast.success("Note deleted");
+    } catch (e) {
+      toast.error(formatError(e));
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-xl bg-emerald-50/60 border border-emerald-200 p-3">
+      <div className="text-[11px] uppercase tracking-widest font-semibold text-emerald-800 mb-2">Admin Notes</div>
+      {notes.length === 0 ? (
+        <div className="text-xs text-stone-500 italic mb-2">No admin notes yet for this visit.</div>
+      ) : (
+        <ul className="space-y-2 mb-3">
+          {notes.map((n) => (
+            <li key={n.id} data-testid={`admin-note-${n.id}`} className="bg-white rounded-lg border border-emerald-100 px-3 py-2 text-sm text-stone-800">
+              {n.status && (
+                <span className={`inline-block mb-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_COLOR[n.status] || "bg-stone-100 text-stone-700"}`}>
+                  {n.status}
+                </span>
+              )}
+              <div className="whitespace-pre-wrap break-words">{n.text}</div>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-1.5 text-[11px] text-stone-500">
+                <span className="truncate">— {n.author_name} · {new Date(n.created_at).toLocaleString()}</span>
+                <button
+                  onClick={() => deleteNote(n.id)}
+                  data-testid={`admin-note-delete-${n.id}`}
+                  className="text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1 shrink-0"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-2">
+        <select
+          value={noteStatus}
+          onChange={(e) => setNoteStatus(e.target.value)}
+          data-testid={`admin-note-status-${visit.id}`}
+          className="rounded-lg border border-emerald-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+        >
+          <option value="">Status (optional)</option>
+          {NOTE_STATUSES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={2}
+          placeholder="Add a note for this visit (visible to all admins)…"
+          data-testid={`admin-note-input-${visit.id}`}
+          className="rounded-lg border border-emerald-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 bg-white resize-y w-full"
+        />
+      </div>
+      <div className="mt-2 flex justify-end">
+        <button
+          onClick={addNote}
+          disabled={saving || !text.trim()}
+          data-testid={`admin-note-add-${visit.id}`}
+          className="btn-primary rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          Add Note
+        </button>
       </div>
     </div>
   );
