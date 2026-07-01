@@ -21,7 +21,7 @@ export default function PortalLogin() {
     setLoading(false);
     if (r.ok) {
       toast.success("Welcome back!");
-      nav(r.user.role === "admin" ? "/admin" : "/field");
+      nav(r.user.role === "admin" ? "/admin" : r.user.role === "shop_worker" ? "/shop" : "/field");
     } else {
       toast.error(r.error);
     }
@@ -35,7 +35,7 @@ export default function PortalLogin() {
         <div className="relative z-10 h-full p-12 flex flex-col justify-between text-white">
           <div className="flex items-center gap-3">
             <img src={LOGO} alt="MG" className="w-12 h-12 rounded-full ring-2 ring-white/20" />
-            <div className="font-display font-bold text-xl">Maria Glass & Plywood</div>
+            <div className="font-display font-bold text-xl">Maria Glass & Plywoods</div>
           </div>
           <div>
             <div className="label-eyebrow text-emerald-300">Field Portal</div>

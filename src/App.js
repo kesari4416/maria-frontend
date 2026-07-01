@@ -14,6 +14,7 @@ import Gallery from "@/pages/Gallery";
 import Contact from "@/pages/Contact";
 import PortalLogin from "@/pages/PortalLogin";
 import FieldDashboard from "@/pages/FieldDashboard";
+import ShopDashboard from "@/pages/ShopDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 
 function PublicLayout({ children }) {
@@ -30,7 +31,8 @@ function Protected({ children, role }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-stone-500">Loading...</div>;
   if (!user) return <Navigate to="/portal" replace />;
-  if (role && user.role !== role) return <Navigate to={user.role === "admin" ? "/admin" : "/field"} replace />;
+  const home = user.role === "admin" ? "/admin" : user.role === "shop_worker" ? "/shop" : "/field";
+  if (role && user.role !== role) return <Navigate to={home} replace />;
   return children;
 }
 
@@ -58,6 +60,7 @@ function App() {
             <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
             <Route path="/portal" element={<PortalLayout><PortalLogin /></PortalLayout>} />
             <Route path="/field" element={<Protected role="field_worker"><PortalLayout><FieldDashboard /></PortalLayout></Protected>} />
+            <Route path="/shop" element={<Protected role="shop_worker"><PortalLayout><ShopDashboard /></PortalLayout></Protected>} />
             <Route path="/admin" element={<Protected role="admin"><PortalLayout><AdminDashboard /></PortalLayout></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

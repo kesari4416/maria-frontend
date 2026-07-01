@@ -4,7 +4,7 @@ import { Menu, X, Phone } from "lucide-react";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const LOGO = "https://customer-assets.emergentagent.com/job_c473f9e5-814c-45ab-92b6-facfece4a340/artifacts/kabbdtfj_maria_logo.jpg";
-const WHATSAPP_URL = "https://wa.me/919994611220?text=Hello%20Maria%20Glass%20%26%20Plywood%2C%20I%27d%20like%20to%20enquire%20about%20your%20products.";
+const WHATSAPP_URL = "https://wa.me/919994611220?text=Hello%20Maria%20Glass%20%26%20Plywoods%2C%20I%27d%20like%20to%20enquire%20about%20your%20products.";
 
 const links = [
   { to: "/", label: "Home" },
@@ -22,10 +22,10 @@ export default function Navbar() {
     <header className="glass-nav sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 flex items-center justify-between h-20">
         <Link to="/" className="flex items-center gap-3" data-testid="nav-logo">
-          <img src={LOGO} alt="Maria Glass & Plywood" className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100" />
+          <img src={LOGO} alt="Maria Glass & Plywoods" className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100" />
           <div className="leading-tight">
             <div className="font-display font-bold text-lg text-stone-900">Maria Glass & Plywoods</div>
-            <div className="text-[10px] tracking-[0.2em] uppercase text-emerald-700 font-semibold">Nagercoil · Since 2006</div>
+            <div className="text-[10px] tracking-[0.2em] uppercase text-emerald-700 font-semibold">Nagercoil · Since 2010</div>
           </div>
         </Link>
 
@@ -48,11 +48,11 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <a
-            href="tel:+916379517048"
+            href="tel:+919994611220"
             data-testid="nav-call"
             className="flex items-center gap-2 text-sm font-semibold text-stone-800 hover:text-emerald-700"
           >
-            <Phone className="w-4 h-4" /> 6379517048
+            <Phone className="w-4 h-4" /> 99946 11220
           </a>
           <a
             href={WHATSAPP_URL}

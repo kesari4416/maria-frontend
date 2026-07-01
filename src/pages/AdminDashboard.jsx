@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [rejected, setRejected] = useState([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newWorker, setNewWorker] = useState({ name: "", email: "", password: "" });
+  const [newWorker, setNewWorker] = useState({ name: "", email: "", password: "", role: "field_worker" });
 
   const refresh = async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
     try {
       await api.post("/admin/workers", newWorker);
       toast.success("Worker account created");
-      setNewWorker({ name: "", email: "", password: "" });
+      setNewWorker({ name: "", email: "", password: "", role: "field_worker" });
       refresh();
     } catch (err) {
       toast.error(formatError(err));
@@ -318,25 +318,16 @@ function TimelineModal({ sub, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchTimeline = async () => {
-    try {
-      const res = await api.get(`/submissions/${sub.id}/timeline`);
-      setData(res.data);
-    } catch (e) {
-      toast.error(formatError(e));
-    } finally { setLoading(false); }
-  };
-
   useEffect(() => {
-    fetchTimeline();
+    (async () => {
+      try {
+        const res = await api.get(`/submissions/${sub.id}/timeline`);
+        setData(res.data);
+      } catch (e) {
+        toast.error(formatError(e));
+      } finally { setLoading(false); }
+    })();
   }, [sub.id]);
-
-  const handleNoteAdded = (visitId, admin_notes) => {
-    setData((d) => d ? {
-      ...d,
-      visits: d.visits.map((v) => v.id === visitId ? { ...v, admin_notes } : v),
-    } : d);
-  };
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
@@ -393,7 +384,7 @@ function TimelineModal({ sub, onClose }) {
                       </div>
                     </div>
 
-                    <AdminNotesBlock visit={v} onNoteAdded={handleNoteAdded} />
+                    <NotesReadonlyBlock notes={v.admin_notes || []} />
                   </div>
                 );
               })}
@@ -405,102 +396,26 @@ function TimelineModal({ sub, onClose }) {
   );
 }
 
-function AdminNotesBlock({ visit, onNoteAdded }) {
-  const [text, setText] = useState("");
-  const [noteStatus, setNoteStatus] = useState("");
-  const [saving, setSaving] = useState(false);
-  const notes = visit.admin_notes || [];
-  const NOTE_STATUSES = ["Site Visited", "Materials Delivered", "Work in Progress", "Completed", "On Hold", "Cancelled"];
-
-  const addNote = async () => {
-    const t = text.trim();
-    if (!t) return;
-    setSaving(true);
-    try {
-      const res = await api.post(`/admin/visit/${visit.id}/note`, { text: t, status: noteStatus || null });
-      onNoteAdded(visit.id, res.data.admin_notes);
-      setText("");
-      setNoteStatus("");
-      toast.success("Admin note added");
-    } catch (e) {
-      toast.error(formatError(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteNote = async (noteId) => {
-    if (!window.confirm("Delete this admin note?")) return;
-    try {
-      const res = await api.delete(`/admin/visit/${visit.id}/note/${noteId}`);
-      onNoteAdded(visit.id, res.data.admin_notes);
-      toast.success("Note deleted");
-    } catch (e) {
-      toast.error(formatError(e));
-    }
-  };
-
+function NotesReadonlyBlock({ notes }) {
+  if (!notes.length) return null;
   return (
     <div className="mt-2 rounded-xl bg-emerald-50/60 border border-emerald-200 p-3">
-      <div className="text-[11px] uppercase tracking-widest font-semibold text-emerald-800 mb-2">Admin Notes</div>
-      {notes.length === 0 ? (
-        <div className="text-xs text-stone-500 italic mb-2">No admin notes yet for this visit.</div>
-      ) : (
-        <ul className="space-y-2 mb-3">
-          {notes.map((n) => (
-            <li key={n.id} data-testid={`admin-note-${n.id}`} className="bg-white rounded-lg border border-emerald-100 px-3 py-2 text-sm text-stone-800">
-              {n.status && (
-                <span className={`inline-block mb-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_COLOR[n.status] || "bg-stone-100 text-stone-700"}`}>
-                  {n.status}
-                </span>
-              )}
-              <div className="whitespace-pre-wrap break-words">{n.text}</div>
-              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-1.5 text-[11px] text-stone-500">
-                <span className="truncate">— {n.author_name} · {new Date(n.created_at).toLocaleString()}</span>
-                <button
-                  onClick={() => deleteNote(n.id)}
-                  data-testid={`admin-note-delete-${n.id}`}
-                  className="text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1 shrink-0"
-                >
-                  <Trash2 className="w-3 h-3" /> Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-2">
-        <select
-          value={noteStatus}
-          onChange={(e) => setNoteStatus(e.target.value)}
-          data-testid={`admin-note-status-${visit.id}`}
-          className="rounded-lg border border-emerald-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
-        >
-          <option value="">Status (optional)</option>
-          {NOTE_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={2}
-          placeholder="Add a note for this visit (visible to all admins)…"
-          data-testid={`admin-note-input-${visit.id}`}
-          className="rounded-lg border border-emerald-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 bg-white resize-y w-full"
-        />
-      </div>
-      <div className="mt-2 flex justify-end">
-        <button
-          onClick={addNote}
-          disabled={saving || !text.trim()}
-          data-testid={`admin-note-add-${visit.id}`}
-          className="btn-primary rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-          Add Note
-        </button>
-      </div>
+      <div className="text-[11px] uppercase tracking-widest font-semibold text-emerald-800 mb-2">Notes ({notes.length})</div>
+      <ul className="space-y-2">
+        {notes.map((n) => (
+          <li key={n.id} data-testid={`admin-note-${n.id}`} className="bg-white rounded-lg border border-emerald-100 px-3 py-2 text-sm text-stone-800">
+            {n.status && (
+              <span className={`inline-block mb-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_COLOR[n.status] || "bg-stone-100 text-stone-700"}`}>
+                {n.status}
+              </span>
+            )}
+            <div className="whitespace-pre-wrap break-words">{n.text}</div>
+            <div className="mt-1.5 text-[11px] text-stone-500">
+              — {n.author_name}{n.author_role ? ` (${n.author_role === "admin" ? "Admin" : "Worker"})` : ""} · {new Date(n.created_at).toLocaleString()}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -508,7 +423,7 @@ function AdminNotesBlock({ visit, onNoteAdded }) {
 function WorkersPanel({ workers, onRemove, newWorker, setNewWorker, creating, onCreate }) {
   return (
     <div className="p-6 md:p-8">
-      <form onSubmit={onCreate} className="bg-stone-50 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-8">
+      <form onSubmit={onCreate} className="bg-stone-50 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-8">
         <div>
           <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Name</label>
           <input data-testid="admin-new-worker-name" required value={newWorker.name} onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600" />
@@ -521,14 +436,26 @@ function WorkersPanel({ workers, onRemove, newWorker, setNewWorker, creating, on
           <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Password</label>
           <input data-testid="admin-new-worker-password" type="text" required value={newWorker.password} onChange={(e) => setNewWorker({ ...newWorker, password: e.target.value })} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600" />
         </div>
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Role</label>
+          <select
+            data-testid="admin-new-worker-role"
+            value={newWorker.role}
+            onChange={(e) => setNewWorker({ ...newWorker, role: e.target.value })}
+            className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+          >
+            <option value="field_worker">Field Worker</option>
+            <option value="shop_worker">Shop Worker</option>
+          </select>
+        </div>
         <button data-testid="admin-create-worker-btn" disabled={creating} className="btn-primary rounded-full px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
           {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Create Worker
+          Create User
         </button>
       </form>
 
       {workers.length === 0 ? (
-        <div className="text-center text-stone-500 py-10">No field workers yet — create the first one above.</div>
+        <div className="text-center text-stone-500 py-10">No workers yet — create the first one above.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -536,6 +463,7 @@ function WorkersPanel({ workers, onRemove, newWorker, setNewWorker, creating, on
               <tr className="text-left text-xs uppercase tracking-widest text-stone-600">
                 <th className="px-5 py-4">Name</th>
                 <th className="px-5 py-4">Email</th>
+                <th className="px-5 py-4">Role</th>
                 <th className="px-5 py-4">Created</th>
                 <th className="px-5 py-4 text-right">Action</th>
               </tr>
@@ -545,6 +473,11 @@ function WorkersPanel({ workers, onRemove, newWorker, setNewWorker, creating, on
                 <tr key={w.id} className="border-t border-stone-100 hover:bg-stone-50">
                   <td className="px-5 py-4 font-semibold text-stone-900">{w.name}</td>
                   <td className="px-5 py-4 text-stone-700">{w.email}</td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${w.role === "shop_worker" ? "bg-violet-50 text-violet-700" : "bg-emerald-50 text-emerald-700"}`}>
+                      {w.role === "shop_worker" ? "Shop Worker" : "Field Worker"}
+                    </span>
+                  </td>
                   <td className="px-5 py-4 text-stone-500">{new Date(w.created_at).toLocaleDateString()}</td>
                   <td className="px-5 py-4 text-right">
                     <button onClick={() => onRemove(w.id)} data-testid={`admin-delete-worker-${w.id}`} className="text-rose-600 hover:text-rose-700 text-sm font-semibold inline-flex items-center gap-1">
@@ -626,3 +559,4 @@ function RejectedAttemptsTable({ items }) {
     </div>
   );
 }
+

@@ -12,7 +12,7 @@ export function normalizeWhatsApp(raw) {
   return d;
 }
 
-const COMPANY = "Maria Glass & Plywood";
+const COMPANY = "Maria Glass & Plywoods";
 
 const buildInitial = (client, location) => {
   const b = getBranch(location);

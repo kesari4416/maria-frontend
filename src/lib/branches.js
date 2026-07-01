@@ -2,7 +2,7 @@
 
 const HQ = {
   branch: "Nagercoil Branch",
-  address: `Maria Glass & Plywood
+  address: `Maria Glass & Plywoods
 29/10-B, Beach Road,
 Nagercoil, Kanniyakumari,
 Tamil Nadu - 629002`,
@@ -15,35 +15,35 @@ export const BRANCHES = {
 
   "Monday Market": {
     branch: "Monday Market Branch",
-    address: `Maria Glass & Plywood
+    address: `Maria Glass & Plywoods
 11/85E/1, Near Market,
 Thingalnagar,
 Kanniyakumari,
 Tamil Nadu - 629802`,
     mobile: "+91 75400 22411",
-    mapLink: "https://maps.app.goo.gl/BfLk7AtBVb6WN1PH9",
+    mapLink: "https://share.google/g4AQZo1Tyn1ss0eJI",
   },
 
   Valliyoor: {
     branch: "Valliyoor Branch",
-    address: `Maria Glass & Plywood
+    address: `Maria Glass & Plywoods
 917-C, Annai Velankanni Complex,
 Main Road, Near Court,
 Valliyoor,
 Tirunelveli - 627117`,
     mobile: "+91 99441 09603",
-    mapLink: "https://maps.app.goo.gl/vvjZ9s12GrctyB1F8",
+    mapLink: "https://share.google/Syskf2htqrO0fIhc4",
   },
 
   Thisayanvilai: {
     branch: "Thisayanvilai Branch",
-    address: `Maria Glass & Plywood
+    address: `Maria Glass & Plywoods
 182 E, Udankudi Road,
 Thisayanvilai,
 Tirunelveli,
 Tamil Nadu - 627657`,
     mobile: "+91 81224 25564",
-    mapLink: "https://maps.app.goo.gl/4cpz9mvJAW4pXiMd8",
+    mapLink: "https://share.google/EDqlrDtJG2DlKf2gN",
   },
 };
 

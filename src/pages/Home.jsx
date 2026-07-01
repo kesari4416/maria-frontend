@@ -45,7 +45,7 @@ export default function Home() {
               Premium Glass, Plywood & Doors for every kind of build.
             </h1>
             <p className="mt-6 text-base sm:text-lg text-stone-200 max-w-2xl leading-relaxed">
-              From elegant glass facades to sturdy doors and finest plywood — Maria Glass & Plywood is Kanyakumari's go-to partner for residential and commercial projects.
+              From elegant glass facades to sturdy doors and finest plywood — Maria Glass & Plywoods is Kanyakumari's go-to partner for residential and commercial projects.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link to="/products" data-testid="hero-cta-products" className="btn-primary rounded-full px-7 py-3.5 text-sm font-semibold inline-flex items-center gap-2">
@@ -67,7 +67,7 @@ export default function Home() {
             Building trust in every sheet, pane and panel.
           </h2>
           <p className="mt-6 text-stone-600 leading-relaxed">
-            Maria Glass & Plywood is your trusted destination for high-quality glass, plywood, and hardware solutions in Nagercoil. With years of industry expertise, we offer a curated selection that meets the demands of architects, contractors and homeowners alike.
+            Maria Glass & Plywoods is your trusted destination for high-quality glass, plywood, and hardware solutions in Nagercoil. With years of industry expertise, we offer a curated selection that meets the demands of architects, contractors and homeowners alike.
           </p>
           <p className="mt-4 text-stone-600 leading-relaxed">
             Committed to quality and customer satisfaction, we deliver personalized service for both residential and commercial projects — experience excellence with Maria.
