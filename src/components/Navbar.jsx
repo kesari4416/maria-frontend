@@ -25,7 +25,7 @@ export default function Navbar() {
           <img src={LOGO} alt="Maria Glass & Plywoods" className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-100" />
           <div className="leading-tight">
             <div className="font-display font-bold text-lg text-stone-900">Maria Glass & Plywoods</div>
-            <div className="text-[10px] tracking-[0.2em] uppercase text-emerald-700 font-semibold">Nagercoil · Since 2010</div>
+            <div className="text-[10px] tracking-[0.2em] uppercase text-emerald-700 font-semibold">Nagercoil · Since 2005</div>
           </div>
         </Link>
 

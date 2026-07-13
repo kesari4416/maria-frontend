@@ -265,8 +265,8 @@ function SubmissionsTable({ items }) {
                   <td className="px-2 py-2 text-stone-600 text-xs truncate">
                     <div className="flex items-center gap-1.5 truncate">
                       <span
-                        title={s.email_sent ? "Email sent" : "Email failed"}
-                        className={`inline-block w-2 h-2 rounded-full shrink-0 ${s.email_sent ? "bg-emerald-500" : "bg-amber-500"}`}
+                        title={s.email_sent === true ? "Email sent" : s.email_sent === false ? "Email failed - check SMTP config" : "Email queued (pending)"}
+                        className={`inline-block w-2 h-2 rounded-full shrink-0 ${s.email_sent === true ? "bg-emerald-500" : s.email_sent === false ? "bg-rose-500" : "bg-stone-400"}`}
                       />
                       <span className="truncate">{dateShort} {timeShort}</span>
                     </div>

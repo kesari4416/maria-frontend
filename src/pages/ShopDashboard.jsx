@@ -160,7 +160,15 @@ function SubmissionsTable({ items, onDataChanged }) {
               const timeShort = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
               return (
                 <tr key={s.id} data-testid={`shop-submission-row-${s.id}`} className="border-t border-stone-100 hover:bg-stone-50 align-middle">
-                  <td className="px-2 py-2 text-stone-600 text-xs truncate">{dateShort} {timeShort}</td>
+                  <td className="px-2 py-2 text-stone-600 text-xs truncate">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span
+                        title={s.email_sent === true ? "Email sent" : s.email_sent === false ? "Email failed - check SMTP config" : "Email queued (pending)"}
+                        className={`inline-block w-2 h-2 rounded-full shrink-0 ${s.email_sent === true ? "bg-emerald-500" : s.email_sent === false ? "bg-rose-500" : "bg-stone-400"}`}
+                      />
+                      <span className="truncate">{dateShort} {timeShort}</span>
+                    </div>
+                  </td>
                   <td className="px-2 py-2 truncate">
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold mr-1 ${visitN === 1 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>#{visitN}</span>
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLOR[status] || "bg-stone-100 text-stone-700"}`}>{status}</span>
