@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Loader2, ClipboardList, MapPin, History, X, Plus, Trash2, RefreshCw, Users } from "lucide-react";
+import { LogOut, Loader2, ClipboardList, MapPin, History, X, Plus, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -22,22 +22,14 @@ const NOTE_STATUSES = ["Site Visited", "Materials Delivered", "Work in Progress"
 export default function ShopDashboard() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
-  const [tab, setTab] = useState("leads");
   const [submissions, setSubmissions] = useState([]);
-  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newWorker, setNewWorker] = useState({ name: "", email: "", password: "" });
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const [s, w] = await Promise.all([
-        api.get("/admin/submissions"),
-        api.get("/admin/workers"),
-      ]);
+      const s = await api.get("/admin/submissions");
       setSubmissions(s.data);
-      setWorkers(w.data);
     } catch (e) {
       toast.error(formatError(e));
     } finally {
@@ -46,32 +38,6 @@ export default function ShopDashboard() {
   };
 
   useEffect(() => { refresh(); }, []);
-
-  const createFieldWorker = async (e) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      await api.post("/admin/workers", { ...newWorker, role: "field_worker" });
-      toast.success("Field worker created");
-      setNewWorker({ name: "", email: "", password: "" });
-      refresh();
-    } catch (err) {
-      toast.error(formatError(err));
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const removeWorker = async (id) => {
-    if (!window.confirm("Delete this field worker?")) return;
-    try {
-      await api.delete(`/admin/workers/${id}`);
-      toast.success("Worker deleted");
-      refresh();
-    } catch (e) {
-      toast.error(formatError(e));
-    }
-  };
 
   return (
     <div data-testid="shop-dashboard" className="min-h-[calc(100vh-5rem)] bg-stone-100">
@@ -91,97 +57,27 @@ export default function ShopDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
           <StatCard icon={ClipboardList} label="Total Leads" value={submissions.length} />
           <StatCard icon={MapPin} label="With GPS" value={submissions.filter((s) => s.geo?.latitude).length} />
           <StatCard icon={History} label="Follow-up Visits" value={submissions.filter((s) => (s.visit_number || 1) > 1).length} />
-          <StatCard icon={Users} label="Field Workers" value={workers.length} />
         </div>
 
         <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
-          <div className="flex border-b border-stone-200">
-            <TabBtn active={tab === "leads"} onClick={() => setTab("leads")} testId="shop-tab-leads">Client Leads</TabBtn>
-            <TabBtn active={tab === "workers"} onClick={() => setTab("workers")} testId="shop-tab-workers">Field Workers ({workers.length})</TabBtn>
+          <div className="flex items-center justify-between border-b border-stone-200 px-5 py-3">
+            <div className="text-xs uppercase tracking-widest font-semibold text-stone-500">All Client Leads</div>
+            <button onClick={refresh} data-testid="shop-refresh" className="text-xs text-stone-600 hover:text-emerald-700 inline-flex items-center gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </button>
           </div>
 
           {loading ? (
             <div className="p-16 text-center text-stone-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
-          ) : tab === "leads" ? (
-            <SubmissionsTable items={submissions} onDataChanged={refresh} />
           ) : (
-            <FieldWorkersPanel workers={workers} onRemove={removeWorker} newWorker={newWorker} setNewWorker={setNewWorker} creating={creating} onCreate={createFieldWorker} onRefresh={refresh} />
+            <SubmissionsTable items={submissions} onDataChanged={refresh} />
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function TabBtn({ active, onClick, children, testId }) {
-  return (
-    <button onClick={onClick} data-testid={testId} className={`px-6 py-4 text-sm font-semibold border-b-2 ${active ? "border-emerald-700 text-emerald-700" : "border-transparent text-stone-600 hover:text-stone-900"}`}>
-      {children}
-    </button>
-  );
-}
-
-function FieldWorkersPanel({ workers, onRemove, newWorker, setNewWorker, creating, onCreate, onRefresh }) {
-  return (
-    <div className="p-6 md:p-8">
-      <form onSubmit={onCreate} className="bg-stone-50 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-8">
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Name</label>
-          <input data-testid="shop-new-worker-name" required value={newWorker.name} onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Email</label>
-          <input data-testid="shop-new-worker-email" type="email" required value={newWorker.email} onChange={(e) => setNewWorker({ ...newWorker, email: e.target.value })} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Password</label>
-          <input data-testid="shop-new-worker-password" type="text" required value={newWorker.password} onChange={(e) => setNewWorker({ ...newWorker, password: e.target.value })} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600" />
-        </div>
-        <button data-testid="shop-create-worker-btn" disabled={creating} className="btn-primary rounded-full px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
-          {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Create Field Worker
-        </button>
-      </form>
-
-      <div className="flex justify-between items-center mb-3">
-        <div className="text-xs uppercase tracking-widest font-semibold text-stone-500">Existing Field Workers</div>
-        <button onClick={onRefresh} className="text-xs text-stone-600 hover:text-emerald-700 inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
-      </div>
-
-      {workers.length === 0 ? (
-        <div className="text-center text-stone-500 py-10">No field workers yet — create the first one above.</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50">
-              <tr className="text-left text-xs uppercase tracking-widest text-stone-600">
-                <th className="px-5 py-3">Name</th>
-                <th className="px-5 py-3">Email</th>
-                <th className="px-5 py-3">Created</th>
-                <th className="px-5 py-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workers.map((w) => (
-                <tr key={w.id} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-5 py-3 font-semibold text-stone-900">{w.name}</td>
-                  <td className="px-5 py-3 text-stone-700">{w.email}</td>
-                  <td className="px-5 py-3 text-stone-500">{new Date(w.created_at).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 text-right">
-                    <button onClick={() => onRemove(w.id)} data-testid={`shop-delete-worker-${w.id}`} className="text-rose-600 hover:text-rose-700 text-sm font-semibold inline-flex items-center gap-1">
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }

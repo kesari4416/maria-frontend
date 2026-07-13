@@ -18,7 +18,7 @@ const STATUS_OPTIONS = [
   "Cancelled",
 ];
 
-const CLIENT_ROLES = ["Engineer", "Plumber", "Electrician", "Mastri", "Other"];
+const CLIENT_ROLES = ["Engineer", "Carpenter", "Contractor", "Site Owner", "Architect", "Plumber", "Electrician"];
 const LOCATIONS = ["Nagercoil", "Monday Market", "Valliyoor", "Thisayanvilai"];
 
 const STATUS_COLOR = {

@@ -13,6 +13,7 @@ export function normalizeWhatsApp(raw) {
 }
 
 const COMPANY = "Maria Glass & Plywoods";
+const TOLL_FREE = "1800 425 1220";
 
 const buildInitial = (client, location) => {
   const b = getBranch(location);
@@ -27,12 +28,13 @@ Our field team has visited your site and noted your requirements. We are current
 ${b.address}
 
 📞 Mobile: ${b.mobile}
+☎️ Toll-Free: ${TOLL_FREE}
 
 📍 Location: ${b.mapLink}
 
 📸 Instagram: ${COMMON.instagram}
 
-If you have any urgent queries, please feel free to contact us at ${COMMON.urgentMobile}.
+If you have any urgent queries, please feel free to contact us at ${COMMON.urgentMobile} or our toll-free number ${TOLL_FREE}.
 
 Thank you for choosing ${COMPANY}. We look forward to serving you!
 
@@ -52,6 +54,7 @@ ${b.address}
 
 📞 Mobile: ${b.mobile}
 📞 Urgent: ${COMMON.urgentMobile}
+☎️ Toll-Free: ${TOLL_FREE}
 
 📸 Instagram: ${COMMON.instagram}
 
