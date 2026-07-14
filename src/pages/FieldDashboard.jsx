@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, MapPin, Loader2, CheckCircle2, LogOut, Upload, PlusCircle, ListChecks, Clock, RefreshCw } from "lucide-react";
+import RemindersView from "@/components/RemindersView";
+import { Camera, MapPin, Loader2, CheckCircle2, LogOut, Upload, PlusCircle, ListChecks, Clock, RefreshCw, Bell, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -29,6 +30,41 @@ const STATUS_COLOR = {
   "On Hold": "bg-stone-100 text-stone-700",
   "Cancelled": "bg-rose-50 text-rose-700",
 };
+
+// Robust GPS helper with automatic fallback: tries high-accuracy first,
+// falls back to low-accuracy (network/wifi/cell) if GPS fix unavailable.
+function requestGpsWithFallback() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error("GPS not supported on this device/browser"));
+
+    const humanize = (err) => {
+      switch (err.code) {
+        case 1: return "Permission denied. Please allow Location access for this site in your browser settings.";
+        case 2: return "Position unavailable. Please enable GPS/Location services on your device and step outside for a clearer signal.";
+        case 3: return "GPS timed out. Please try again — outdoors gives the best signal.";
+        default: return err.message || "Could not get your location.";
+      }
+    };
+
+    // First attempt: high accuracy (real GPS)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(pos),
+      (err) => {
+        // Retry with low accuracy (wifi/cell/IP) on POSITION_UNAVAILABLE (2) or TIMEOUT (3)
+        if (err.code === 2 || err.code === 3) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            (err2) => reject(new Error(humanize(err2))),
+            { enableHighAccuracy: false, timeout: 25000, maximumAge: 60000 }
+          );
+        } else {
+          reject(new Error(humanize(err)));
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
+}
 
 export default function FieldDashboard() {
   const { user, logout } = useAuth();
@@ -90,13 +126,16 @@ export default function FieldDashboard() {
       ) : (
         <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
-            <div className="flex border-b border-stone-200">
+            <div className="flex border-b border-stone-200 overflow-x-auto">
               <TabBtn active={tab === "new"} onClick={() => setTab("new")} testId="field-tab-new" icon={PlusCircle}>New Submission</TabBtn>
               <TabBtn active={tab === "reports"} onClick={() => setTab("reports")} testId="field-tab-reports" icon={ListChecks}>My Reports ({myReports.length})</TabBtn>
+              <TabBtn active={tab === "reminders"} onClick={() => setTab("reminders")} testId="field-tab-reminders" icon={Bell}>Reminders</TabBtn>
             </div>
 
             {tab === "new" ? (
               <NewSubmissionForm onDone={() => { refreshReports(); setTab("reports"); }} />
+            ) : tab === "reminders" ? (
+              <RemindersView testIdPrefix="field-reminders" />
             ) : (
               <MyReportsList reports={myReports} onRefresh={refreshReports} onFollowUp={openFollowUp} />
             )}
@@ -124,6 +163,8 @@ function StatusPill({ status }) {
 }
 
 function MyReportsList({ reports, onRefresh, onFollowUp }) {
+  const [search, setSearch] = useState("");
+  const [recency, setRecency] = useState("all"); // 'all' | '7d' | '30d'
   if (!reports.length) {
     return (
       <div className="p-16 text-center text-stone-500">
@@ -132,13 +173,74 @@ function MyReportsList({ reports, onRefresh, onFollowUp }) {
       </div>
     );
   }
+  const q = search.trim().toLowerCase();
+  const now = Date.now();
+  const recencyMs = recency === "7d" ? 7 * 86400000 : recency === "30d" ? 30 * 86400000 : null;
+  const visible = reports.filter((r) => {
+    if (recencyMs != null) {
+      const t = r.latest_visit_at ? new Date(r.latest_visit_at).getTime() : 0;
+      if (!t || now - t > recencyMs) return false;
+    }
+    if (!q) return true;
+    const hay = [
+      r.client_name, r.client_mobile, r.client_company, r.client_email,
+      r.client_role, r.location, r.latest_status,
+    ].map((x) => (x || "").toString().toLowerCase()).join(" | ");
+    return hay.includes(q);
+  });
   return (
     <div className="divide-y divide-stone-100">
-      <div className="flex justify-between items-center px-6 py-3 bg-stone-50">
-        <div className="text-xs uppercase tracking-widest font-semibold text-stone-500">Recent reports</div>
-        <button onClick={onRefresh} data-testid="field-reports-refresh" className="text-xs text-stone-600 hover:text-emerald-700 inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+      <div className="flex flex-col gap-3 px-6 py-3 bg-stone-50">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-xs uppercase tracking-widest font-semibold text-stone-500">Recent reports</div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+              <input
+                data-testid="field-search-input"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search my reports…"
+                className="w-full rounded-full border border-stone-300 pl-9 pr-9 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-white"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  data-testid="field-search-clear"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 rounded-full p-1"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button onClick={onRefresh} data-testid="field-reports-refresh" className="text-xs text-stone-600 hover:text-emerald-700 inline-flex items-center gap-1.5 whitespace-nowrap"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[11px] uppercase tracking-widest font-bold text-stone-500 mr-1">Recently contacted:</span>
+          {[
+            { k: "all", label: "Any time" },
+            { k: "7d", label: "Last 7 days" },
+            { k: "30d", label: "Last 30 days" },
+          ].map((r) => (
+            <button
+              key={r.k}
+              onClick={() => setRecency(r.k)}
+              data-testid={`field-recency-${r.k}`}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${recency === r.k ? "bg-emerald-700 text-white" : "bg-white border border-stone-200 text-stone-700 hover:bg-stone-100"}`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
-      {reports.map((r) => (
+      {visible.length === 0 ? (
+        <div className="p-12 text-center text-stone-500 text-sm" data-testid="field-no-results">
+          No reports match your search.
+        </div>
+      ) : visible.map((r) => (
         <div key={r.id} data-testid={`field-report-${r.id}`} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:bg-stone-50">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -190,14 +292,17 @@ function NewSubmissionForm({ onDone }) {
     setPhotos((arr) => arr.map((p, i) => (i === idx ? null : p)));
     setPreviews((arr) => arr.map((p, i) => (i === idx ? null : p)));
   };
-  const getGPS = () => {
-    if (!navigator.geolocation) return toast.error("GPS not supported");
+  const getGPS = async () => {
     setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setForm((f) => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) })); toast.success("Location captured"); setGpsLoading(false); },
-      (err) => { toast.error("Could not get location: " + err.message); setGpsLoading(false); },
-      { enableHighAccuracy: true, timeout: 12000 }
-    );
+    try {
+      const pos = await requestGpsWithFallback();
+      setForm((f) => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }));
+      toast.success(`Location captured (±${Math.round(pos.coords.accuracy || 0)}m)`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setGpsLoading(false);
+    }
   };
 
   const submit = async (e) => {
@@ -322,14 +427,17 @@ function FollowUpForm({ target, timeline, onCancel, onDone }) {
     setPhotos((arr) => arr.map((p, i) => (i === idx ? null : p)));
     setPreviews((arr) => arr.map((p, i) => (i === idx ? null : p)));
   };
-  const getGPS = () => {
-    if (!navigator.geolocation) return toast.error("GPS not supported");
+  const getGPS = async () => {
     setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setForm((f) => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) })); toast.success("Location captured"); setGpsLoading(false); },
-      (err) => { toast.error("Could not get location: " + err.message); setGpsLoading(false); },
-      { enableHighAccuracy: true, timeout: 12000 }
-    );
+    try {
+      const pos = await requestGpsWithFallback();
+      setForm((f) => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }));
+      toast.success(`Location captured (±${Math.round(pos.coords.accuracy || 0)}m)`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setGpsLoading(false);
+    }
   };
 
   const submit = async (e) => {

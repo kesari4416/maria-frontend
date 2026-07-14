@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Plus, Trash2, Loader2, Users, ClipboardList, MapPin, FileSpreadsheet, FileText, History, X, AlertTriangle, Calendar } from "lucide-react";
+import RemindersView from "@/components/RemindersView";
+import { LogOut, Plus, Trash2, Loader2, Users, ClipboardList, MapPin, FileSpreadsheet, FileText, History, X, AlertTriangle, Calendar, Search } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -123,6 +124,7 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-stone-200">
             <div className="flex flex-wrap">
               <TabBtn active={tab === "submissions"} onClick={() => setTab("submissions")} testId="admin-tab-submissions">Submissions</TabBtn>
+              <TabBtn active={tab === "reminders"} onClick={() => setTab("reminders")} testId="admin-tab-reminders">Reminders</TabBtn>
               <TabBtn active={tab === "workers"} onClick={() => setTab("workers")} testId="admin-tab-workers">Field Workers</TabBtn>
               <TabBtn active={tab === "rejected"} onClick={() => setTab("rejected")} testId="admin-tab-rejected">
                 Rejected{rejected.length > 0 && <span className="ml-1.5 inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{rejected.length}</span>}
@@ -152,6 +154,8 @@ export default function AdminDashboard() {
             <div className="p-16 text-center text-stone-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
           ) : tab === "submissions" ? (
             <SubmissionsTable items={submissions} />
+          ) : tab === "reminders" ? (
+            <RemindersView testIdPrefix="admin-reminders" />
           ) : tab === "workers" ? (
             <WorkersPanel
               workers={workers}
@@ -200,19 +204,73 @@ function TabBtn({ active, onClick, children, testId }) {
 function SubmissionsTable({ items }) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [locFilter, setLocFilter] = useState("All locations");
+  const [search, setSearch] = useState("");
+  const [recency, setRecency] = useState("all"); // 'all' | '7d' | '30d'
   const [timelineSub, setTimelineSub] = useState(null);
 
   if (!items.length) return <div className="p-16 text-center text-stone-500">No submissions yet.</div>;
+  const q = search.trim().toLowerCase();
+  const now = Date.now();
+  const recencyMs = recency === "7d" ? 7 * 86400000 : recency === "30d" ? 30 * 86400000 : null;
   const visible = items.filter((s) => {
     const st = s.status || "Site Visited";
     if (statusFilter !== "All" && st !== statusFilter) return false;
     if (locFilter !== "All locations" && (s.location || "") !== locFilter) return false;
+    if (recencyMs != null) {
+      const t = s.created_at ? new Date(s.created_at).getTime() : 0;
+      if (!t || now - t > recencyMs) return false;
+    }
+    if (q) {
+      const hay = [
+        s.client_name, s.client_mobile, s.client_company, s.client_email,
+        s.client_role, s.worker_name, s.location, s.site_address,
+      ].map((x) => (x || "").toString().toLowerCase()).join(" | ");
+      if (!hay.includes(q)) return false;
+    }
     return true;
   });
 
   return (
     <>
       <div className="px-5 py-4 border-b border-stone-100 space-y-3">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+          <input
+            data-testid="admin-search-input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by client, mobile, company, email, role, worker, address…"
+            className="w-full rounded-full border border-stone-300 pl-9 pr-9 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-white"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              data-testid="admin-search-clear"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 rounded-full p-1"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[11px] uppercase tracking-widest font-bold text-stone-500 mr-1">Recently contacted:</span>
+          {[
+            { k: "all", label: "Any time" },
+            { k: "7d", label: "Last 7 days" },
+            { k: "30d", label: "Last 30 days" },
+          ].map((r) => (
+            <button
+              key={r.k}
+              onClick={() => setRecency(r.k)}
+              data-testid={`admin-recency-${r.k}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${recency === r.k ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((s) => (
             <button
@@ -240,6 +298,11 @@ function SubmissionsTable({ items }) {
       </div>
 
       <div className="w-full">
+        {visible.length === 0 ? (
+          <div className="p-12 text-center text-stone-500 text-sm" data-testid="admin-no-results">
+            No submissions match your search / filters.
+          </div>
+        ) : (
         <table className="w-full text-sm table-fixed">
           <thead className="bg-stone-50">
             <tr className="text-left text-xs uppercase tracking-wider text-stone-600">
@@ -321,6 +384,7 @@ function SubmissionsTable({ items }) {
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       {timelineSub && <TimelineModal sub={timelineSub} onClose={() => setTimelineSub(null)} />}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Loader2, ClipboardList, MapPin, History, X, Plus, Trash2, RefreshCw, Calendar } from "lucide-react";
+import RemindersView from "@/components/RemindersView";
+import { LogOut, Loader2, ClipboardList, MapPin, History, X, Plus, Trash2, RefreshCw, Calendar, Search } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +23,7 @@ const NOTE_STATUSES = ["Site Visited", "Materials Delivered", "Work in Progress"
 export default function ShopDashboard() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
+  const [tab, setTab] = useState("leads");
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -64,15 +66,34 @@ export default function ShopDashboard() {
         </div>
 
         <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
-          <div className="flex items-center justify-between border-b border-stone-200 px-5 py-3">
-            <div className="text-xs uppercase tracking-widest font-semibold text-stone-500">All Client Leads</div>
-            <button onClick={refresh} data-testid="shop-refresh" className="text-xs text-stone-600 hover:text-emerald-700 inline-flex items-center gap-1.5">
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh
-            </button>
+          <div className="flex items-center justify-between border-b border-stone-200 px-5 py-3 gap-4">
+            <div className="flex gap-1">
+              <button
+                onClick={() => setTab("leads")}
+                data-testid="shop-tab-leads"
+                className={`px-4 py-2 rounded-full text-xs font-semibold ${tab === "leads" ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
+              >
+                Client Leads
+              </button>
+              <button
+                onClick={() => setTab("reminders")}
+                data-testid="shop-tab-reminders"
+                className={`px-4 py-2 rounded-full text-xs font-semibold ${tab === "reminders" ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
+              >
+                Reminders
+              </button>
+            </div>
+            {tab === "leads" && (
+              <button onClick={refresh} data-testid="shop-refresh" className="text-xs text-stone-600 hover:text-emerald-700 inline-flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
+            )}
           </div>
 
           {loading ? (
             <div className="p-16 text-center text-stone-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+          ) : tab === "reminders" ? (
+            <RemindersView testIdPrefix="shop-reminders" />
           ) : (
             <SubmissionsTable items={submissions} onDataChanged={refresh} />
           )}
@@ -99,19 +120,73 @@ function StatCard({ icon: Icon, label, value }) {
 function SubmissionsTable({ items, onDataChanged }) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [locFilter, setLocFilter] = useState("All locations");
+  const [search, setSearch] = useState("");
+  const [recency, setRecency] = useState("all"); // 'all' | '7d' | '30d'
   const [timelineSub, setTimelineSub] = useState(null);
 
   if (!items.length) return <div className="p-16 text-center text-stone-500">No submissions yet.</div>;
+  const q = search.trim().toLowerCase();
+  const now = Date.now();
+  const recencyMs = recency === "7d" ? 7 * 86400000 : recency === "30d" ? 30 * 86400000 : null;
   const visible = items.filter((s) => {
     const st = s.status || "Site Visited";
     if (statusFilter !== "All" && st !== statusFilter) return false;
     if (locFilter !== "All locations" && (s.location || "") !== locFilter) return false;
+    if (recencyMs != null) {
+      const t = s.created_at ? new Date(s.created_at).getTime() : 0;
+      if (!t || now - t > recencyMs) return false;
+    }
+    if (q) {
+      const hay = [
+        s.client_name, s.client_mobile, s.client_company, s.client_email,
+        s.client_role, s.worker_name, s.location, s.site_address,
+      ].map((x) => (x || "").toString().toLowerCase()).join(" | ");
+      if (!hay.includes(q)) return false;
+    }
     return true;
   });
 
   return (
     <>
       <div className="px-5 py-4 border-b border-stone-100 space-y-3">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+          <input
+            data-testid="shop-search-input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by client, mobile, company, email, role, worker…"
+            className="w-full rounded-full border border-stone-300 pl-9 pr-9 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-white"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              data-testid="shop-search-clear"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 rounded-full p-1"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[11px] uppercase tracking-widest font-bold text-stone-500 mr-1">Recently contacted:</span>
+          {[
+            { k: "all", label: "Any time" },
+            { k: "7d", label: "Last 7 days" },
+            { k: "30d", label: "Last 30 days" },
+          ].map((r) => (
+            <button
+              key={r.k}
+              onClick={() => setRecency(r.k)}
+              data-testid={`shop-recency-${r.k}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${recency === r.k ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"}`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((s) => (
             <button
@@ -138,6 +213,11 @@ function SubmissionsTable({ items, onDataChanged }) {
       </div>
 
       <div className="w-full">
+        {visible.length === 0 ? (
+          <div className="p-12 text-center text-stone-500 text-sm" data-testid="shop-no-results">
+            No submissions match your search / filters.
+          </div>
+        ) : (
         <table className="w-full text-sm table-fixed">
           <thead className="bg-stone-50">
             <tr className="text-left text-xs uppercase tracking-wider text-stone-600">
@@ -213,6 +293,7 @@ function SubmissionsTable({ items, onDataChanged }) {
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       {timelineSub && <TimelineModal sub={timelineSub} onClose={() => setTimelineSub(null)} onDataChanged={onDataChanged} />}
