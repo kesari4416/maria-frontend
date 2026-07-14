@@ -171,7 +171,7 @@ function NewSubmissionForm({ onDone }) {
     client_name: "", client_company: "", client_mobile: "", client_email: "",
     client_role: "", client_role_other: "",
     location: "",
-    site_address: "", notes: "", latitude: "", longitude: "", status: "Site Visited",
+    site_address: "", notes: "", next_appointment_date: "", latitude: "", longitude: "", status: "Site Visited",
   });
   const [photos, setPhotos] = useState([null, null, null]);
   const [previews, setPreviews] = useState([null, null, null]);
@@ -254,7 +254,7 @@ function NewSubmissionForm({ onDone }) {
         )}
 
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
-          <button onClick={() => { setForm({ client_name: "", client_company: "", client_mobile: "", client_email: "", client_role: "", client_role_other: "", location: "", site_address: "", notes: "", latitude: "", longitude: "", status: "Site Visited" }); setPhotos([null,null,null]); setPreviews([null,null,null]); setSubmitted(false); setSubmittedClient(null); }} data-testid="field-new-report" className="btn-primary rounded-full px-6 py-2.5 text-sm font-semibold">Submit another</button>
+          <button onClick={() => { setForm({ client_name: "", client_company: "", client_mobile: "", client_email: "", client_role: "", client_role_other: "", location: "", site_address: "", notes: "", next_appointment_date: "", latitude: "", longitude: "", status: "Site Visited" }); setPhotos([null,null,null]); setPreviews([null,null,null]); setSubmitted(false); setSubmittedClient(null); }} data-testid="field-new-report" className="btn-primary rounded-full px-6 py-2.5 text-sm font-semibold">Submit another</button>
           <button onClick={onDone} className="rounded-full border border-stone-300 px-6 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50">View my reports</button>
         </div>
       </div>
@@ -293,6 +293,7 @@ function NewSubmissionForm({ onDone }) {
         <GpsRow form={form} setForm={setForm} gpsLoading={gpsLoading} getGPS={getGPS} required={false} />
         <PhotoGrid previews={previews} onPhoto={onPhoto} removePhoto={removePhoto} />
         <NotesField value={form.notes} onChange={handle("notes")} />
+        <NextAppointmentField value={form.next_appointment_date} onChange={handle("next_appointment_date")} />
       </Section>
 
       <button data-testid="field-submit-btn" disabled={loading} className="btn-primary w-full rounded-full px-7 py-4 text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
@@ -304,7 +305,7 @@ function NewSubmissionForm({ onDone }) {
 }
 
 function FollowUpForm({ target, timeline, onCancel, onDone }) {
-  const [form, setForm] = useState({ status: "Materials Delivered", notes: "", latitude: "", longitude: "" });
+  const [form, setForm] = useState({ status: "Materials Delivered", notes: "", next_appointment_date: "", latitude: "", longitude: "" });
   const [photos, setPhotos] = useState([null, null, null]);
   const [previews, setPreviews] = useState([null, null, null]);
   const [loading, setLoading] = useState(false);
@@ -436,6 +437,7 @@ function FollowUpForm({ target, timeline, onCancel, onDone }) {
 
           <PhotoGrid previews={previews} onPhoto={onPhoto} removePhoto={removePhoto} />
           <NotesField value={form.notes} onChange={handle("notes")} placeholder="What changed since the last visit? Materials delivered, work progress, issues..." />
+          <NextAppointmentField value={form.next_appointment_date} onChange={handle("next_appointment_date")} />
 
           <button data-testid="field-followup-submit-btn" disabled={loading} className="btn-primary w-full rounded-full px-7 py-4 text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -560,6 +562,23 @@ function NotesField({ value, onChange, placeholder }) {
     <div>
       <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Notes</label>
       <textarea data-testid="field-notes" rows={3} value={value} onChange={onChange} placeholder={placeholder || "Any observations, materials needed, follow-ups..."} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 focus:ring-2 focus:ring-emerald-600 outline-none" />
+    </div>
+  );
+}
+
+function NextAppointmentField({ value, onChange }) {
+  const today = new Date().toISOString().slice(0, 10);
+  return (
+    <div>
+      <label className="text-xs font-semibold uppercase tracking-widest text-stone-600">Date of Next Appointment <span className="text-stone-400 normal-case tracking-normal">(optional)</span></label>
+      <input
+        data-testid="field-next-appointment"
+        type="date"
+        min={today}
+        value={value || ""}
+        onChange={onChange}
+        className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 focus:ring-2 focus:ring-emerald-600 outline-none bg-white"
+      />
     </div>
   );
 }

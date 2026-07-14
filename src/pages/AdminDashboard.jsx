@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Plus, Trash2, Loader2, Users, ClipboardList, MapPin, FileSpreadsheet, FileText, History, X, AlertTriangle } from "lucide-react";
+import { LogOut, Plus, Trash2, Loader2, Users, ClipboardList, MapPin, FileSpreadsheet, FileText, History, X, AlertTriangle, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -244,6 +244,7 @@ function SubmissionsTable({ items }) {
           <thead className="bg-stone-50">
             <tr className="text-left text-xs uppercase tracking-wider text-stone-600">
               <th className="px-2 py-2.5">When</th>
+              <th className="px-2 py-2.5">Next Appt</th>
               <th className="px-2 py-2.5">Status</th>
               <th className="px-2 py-2.5">Client</th>
               <th className="px-2 py-2.5">Location</th>
@@ -260,6 +261,9 @@ function SubmissionsTable({ items }) {
               const d = new Date(s.created_at);
               const dateShort = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
               const timeShort = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+              const nextAppt = s.next_appointment_date
+                ? new Date(s.next_appointment_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+                : null;
               return (
                 <tr key={s.id} data-testid={`submission-row-${s.id}`} className="border-t border-stone-100 hover:bg-stone-50 align-middle">
                   <td className="px-2 py-2 text-stone-600 text-xs truncate">
@@ -270,6 +274,16 @@ function SubmissionsTable({ items }) {
                       />
                       <span className="truncate">{dateShort} {timeShort}</span>
                     </div>
+                  </td>
+                  <td className="px-2 py-2 truncate">
+                    {nextAppt ? (
+                      <span
+                        title={`Next appointment on ${s.next_appointment_date}`}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold whitespace-nowrap"
+                      >
+                        <Calendar className="w-3 h-3" /> {nextAppt}
+                      </span>
+                    ) : <span className="text-stone-300 text-xs">—</span>}
                   </td>
                   <td className="px-2 py-2 truncate">
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold mr-1 ${visitN === 1 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>#{visitN}</span>
@@ -371,6 +385,11 @@ function TimelineModal({ sub, onClose }) {
                     <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3">
                       <div className="text-[11px] uppercase tracking-widest font-semibold text-stone-500 mb-1">Field Worker Response</div>
                       <div className="text-sm text-stone-800 whitespace-pre-wrap">{v.notes || <em className="text-stone-400">No notes from worker</em>}</div>
+                      {v.next_appointment_date && (
+                        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
+                          <Calendar className="w-3 h-3" /> Next appointment: {new Date(v.next_appointment_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-3 text-xs text-stone-500 mt-2">
                         <span>By {v.worker_name}</span>
                         <span>·</span>
