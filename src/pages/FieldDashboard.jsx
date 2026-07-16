@@ -240,7 +240,10 @@ function MyReportsList({ reports, onRefresh, onFollowUp }) {
         <div className="p-12 text-center text-stone-500 text-sm" data-testid="field-no-results">
           No reports match your search.
         </div>
-      ) : visible.map((r) => (
+      ) : visible.map((r) => {
+        const hasGeo = r.geo && r.geo.latitude != null && r.geo.longitude != null;
+        const directionsUrl = hasGeo ? `https://www.google.com/maps/dir/?api=1&destination=${r.geo.latitude},${r.geo.longitude}` : null;
+        return (
         <div key={r.id} data-testid={`field-report-${r.id}`} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:bg-stone-50">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -258,11 +261,34 @@ function MyReportsList({ reports, onRefresh, onFollowUp }) {
               <Clock className="w-3.5 h-3.5" /> Last visit: {new Date(r.latest_visit_at).toLocaleString()}
             </div>
           </div>
-          <button onClick={() => onFollowUp(r)} data-testid={`field-followup-btn-${r.id}`} className="rounded-full bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 text-sm font-semibold inline-flex items-center gap-2 self-start sm:self-auto whitespace-nowrap">
-            <PlusCircle className="w-4 h-4" /> Add Follow-up
-          </button>
+          <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+            {directionsUrl ? (
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noreferrer"
+                data-testid={`field-directions-btn-${r.id}`}
+                title="Open Google Maps directions to this site"
+                className="rounded-full border-2 border-emerald-700 text-emerald-700 hover:bg-emerald-50 px-4 py-2 text-sm font-semibold inline-flex items-center gap-2 whitespace-nowrap"
+              >
+                <MapPin className="w-4 h-4" /> Get Directions
+              </a>
+            ) : (
+              <span
+                data-testid={`field-directions-unavailable-${r.id}`}
+                title="No GPS captured on the initial visit"
+                className="rounded-full border border-stone-200 text-stone-400 px-4 py-2 text-sm font-semibold inline-flex items-center gap-2 whitespace-nowrap cursor-not-allowed"
+              >
+                <MapPin className="w-4 h-4" /> No GPS
+              </span>
+            )}
+            <button onClick={() => onFollowUp(r)} data-testid={`field-followup-btn-${r.id}`} className="rounded-full bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 text-sm font-semibold inline-flex items-center gap-2 whitespace-nowrap">
+              <PlusCircle className="w-4 h-4" /> Add Follow-up
+            </button>
+          </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -505,6 +531,38 @@ function FollowUpForm({ target, timeline, onCancel, onDone }) {
             <MapPin className="w-3.5 h-3.5" /> Must be within 300m of original site
           </div>
         </div>
+
+        {target.geo?.latitude != null && target.geo?.longitude != null && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-widest font-bold text-emerald-800">Head to the site</div>
+              <div className="text-sm text-stone-800 mt-0.5 truncate">
+                Original site GPS: <span className="font-semibold">{target.geo.latitude}, {target.geo.longitude}</span>
+                {target.location && <> · <span className="font-semibold">📍 {target.location}</span></>}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${target.geo.latitude},${target.geo.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                data-testid="field-followup-directions"
+                className="rounded-full bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2 whitespace-nowrap"
+              >
+                <MapPin className="w-4 h-4" /> Get Directions
+              </a>
+              <a
+                href={`https://www.google.com/maps?q=${target.geo.latitude},${target.geo.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                data-testid="field-followup-view-map"
+                className="rounded-full border border-emerald-600 text-emerald-700 hover:bg-emerald-100 px-4 py-2.5 text-sm font-semibold inline-flex items-center gap-2 whitespace-nowrap"
+              >
+                View pin
+              </a>
+            </div>
+          </div>
+        )}
 
         {timeline.length > 0 && (
           <div className="bg-stone-50 rounded-2xl p-4 mb-6">
