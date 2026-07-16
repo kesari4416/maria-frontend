@@ -316,15 +316,18 @@ function TimelineModal({ sub, onClose, onDataChanged }) {
     })();
   }, [sub.id]);
 
-  const handleNoteAdded = (visitId, admin_notes, newStatus) => {
+  const handleNoteAdded = (visitId, admin_notes, newStatus, newAppt) => {
     setData((d) => d ? {
       ...d,
       visits: d.visits.map((v) => {
         if (v.id !== visitId) return v;
-        return newStatus ? { ...v, admin_notes, status: newStatus } : { ...v, admin_notes };
+        const patched = { ...v, admin_notes };
+        if (newStatus) patched.status = newStatus;
+        if (newAppt !== undefined) patched.next_appointment_date = newAppt;
+        return patched;
       }),
     } : d);
-    if (newStatus && typeof onDataChanged === "function") onDataChanged();
+    if ((newStatus || newAppt !== undefined) && typeof onDataChanged === "function") onDataChanged();
   };
 
   return (
@@ -395,8 +398,11 @@ function TimelineModal({ sub, onClose, onDataChanged }) {
 }
 
 function NotesBlock({ visit, onNoteAdded }) {
+  const today = new Date().toISOString().slice(0, 10);
   const [text, setText] = useState("");
   const [noteStatus, setNoteStatus] = useState("");
+  const [appt, setAppt] = useState(visit.next_appointment_date || "");
+  const [apptTouched, setApptTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const notes = visit.admin_notes || [];
 
@@ -405,11 +411,26 @@ function NotesBlock({ visit, onNoteAdded }) {
     if (!t) return;
     setSaving(true);
     try {
-      const res = await api.post(`/visit/${visit.id}/note`, { text: t, status: noteStatus || null });
-      onNoteAdded(visit.id, res.data.admin_notes, res.data.status_updated ? res.data.status : null);
+      const body = { text: t, status: noteStatus || null };
+      if (apptTouched) body.next_appointment_date = appt || "";
+      const res = await api.post(`/visit/${visit.id}/note`, body);
+      onNoteAdded(
+        visit.id,
+        res.data.admin_notes,
+        res.data.status_updated ? res.data.status : null,
+        res.data.appointment_updated ? (res.data.next_appointment_date || null) : undefined,
+      );
       setText("");
       setNoteStatus("");
-      toast.success(res.data.status_updated ? `Note added - status set to ${res.data.status}` : "Note added");
+      setApptTouched(false);
+      let msg = "Note added";
+      if (res.data.status_updated) msg = `Note added — status set to ${res.data.status}`;
+      if (res.data.appointment_updated) {
+        msg += res.data.next_appointment_date
+          ? ` · Next appt: ${res.data.next_appointment_date}`
+          : " · Next appt cleared";
+      }
+      toast.success(msg);
     } catch (e) {
       toast.error(formatError(e));
     } finally {
@@ -479,7 +500,31 @@ function NotesBlock({ visit, onNoteAdded }) {
           className="rounded-lg border border-emerald-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 bg-white resize-y w-full"
         />
       </div>
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 grid grid-cols-1 sm:grid-cols-[160px_1fr_auto] gap-2 items-center">
+        <label className="text-[11px] uppercase tracking-widest font-bold text-emerald-800 sm:pl-1">
+          <Calendar className="w-3.5 h-3.5 inline mr-1 -mt-0.5" /> Next Appointment
+        </label>
+        <div className="flex items-center gap-2 flex-1">
+          <input
+            type="date"
+            min={today}
+            value={appt || ""}
+            onChange={(e) => { setAppt(e.target.value); setApptTouched(true); }}
+            data-testid={`shop-note-appt-${visit.id}`}
+            className="flex-1 rounded-lg border border-emerald-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+          />
+          {appt && (
+            <button
+              type="button"
+              onClick={() => { setAppt(""); setApptTouched(true); }}
+              data-testid={`shop-note-appt-clear-${visit.id}`}
+              title="Clear appointment date"
+              className="text-stone-500 hover:text-rose-600 text-xs font-semibold inline-flex items-center gap-1"
+            >
+              <X className="w-3.5 h-3.5" /> Clear
+            </button>
+          )}
+        </div>
         <button
           onClick={addNote}
           disabled={saving || !text.trim()}
@@ -490,6 +535,13 @@ function NotesBlock({ visit, onNoteAdded }) {
           Add Note
         </button>
       </div>
+      {apptTouched && (
+        <div className="text-[10px] text-emerald-700 mt-1.5 leading-tight">
+          {appt
+            ? <>Will set next appointment to <strong>{appt}</strong> — HQ reminder email sends T-1 day.</>
+            : <>Will <strong>clear</strong> the next appointment date.</>}
+        </div>
+      )}
     </div>
   );
 }
